@@ -4,6 +4,7 @@
 
 int Router::UDP_start()
 {
+    // this part of code is reused from Steven's book
     this->socketNumber=socket(AF_INET,SOCK_DGRAM,0);
     if(this->socketNumber<0)
     {
@@ -26,6 +27,7 @@ int Router::UDP_start()
     socklen_t addrlen;
     addrlen=sizeof(localaddr);
     getsockname(this->socketNumber,(struct sockaddr*) &localaddr,&addrlen);
+    // end of reused part
     this->portNumber=ntohs(localaddr.sin_port);
     return 0;
 }
@@ -81,6 +83,7 @@ void Router::udp_msg_send(char *msg, struct sockaddr* dst)
 
 void Router::udp_msg_send_port(char * msg,int portNumber)
 {
+    
     struct sockaddr_in dst;
     dst.sin_family=AF_INET;
     dst.sin_addr.s_addr=htonl(INADDR_ANY);

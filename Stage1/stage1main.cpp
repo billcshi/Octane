@@ -4,8 +4,8 @@
 #include "stage1main.h"
 #include "../Router/Router.h"
 
-int primary_router_port;
-int primary_pid;
+//extern int primary_router_port;
+//extern int primary_pid;
 
 void primaryRouterMain(Router *primary_router)
 {
@@ -18,6 +18,8 @@ void primaryRouterMain(Router *primary_router)
     char newbuf[60];
     sprintf(newbuf,"router: %d, pid: %s, port:%d\n",1,buf,port);
     primary_router->write_to_log(newbuf);
+    primary_router->close_router();
+    primary_router->close_log();
 }
 
 void secondaryRouterMain(int number, int pid)
@@ -31,6 +33,8 @@ void secondaryRouterMain(int number, int pid)
     my_router.write_to_log(buf);
     sprintf(buf,"%d",pid);
     my_router.udp_msg_send_port(buf,primary_router_port);
+    my_router.close_router();
+    my_router.close_log();
 }
 
 int stage1main(task_config *taskConfig)

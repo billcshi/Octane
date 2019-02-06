@@ -16,14 +16,6 @@ public:
     }
     ~Router() 
     {
-            if (isSockOpen)
-            {
-                close_router();
-            }
-            if (islogOpen)
-            {
-                close_log();
-            }
     }
     void write_to_log(char *);
     void writeln_to_log(char *);

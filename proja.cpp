@@ -6,7 +6,7 @@
 #include "task_config.h"
 #include "Stage1/stage1main.h"
 #include "Stage2/stage2main.h"
-
+#include "GlobalVar.h"
 
 int input_section(std::ifstream &inputStream, task_config* taskConfig)
 {
