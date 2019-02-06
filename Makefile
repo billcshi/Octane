@@ -14,7 +14,7 @@ task_config.o: task_config.cpp
 ./GlobalVar.o: ./GlobalVar.cpp
 	g++ -g -c ./GlobalVar.cpp -o ./GlobalVar.o
 ./Router/sample_tunnel.o: ./Router/sample_tunnel.c
-	gcc -g -c ./Router/sample_tunnel.c -o ./Router/sample_tunnel.o
+	g++ -g -c ./Router/sample_tunnel.c -o ./Router/sample_tunnel.o
 clean:
 	rm -r ./*.o
 	rm -r ./Router/*.o

@@ -26,17 +26,7 @@
 */
 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <linux/if_tun.h>
-#include <sys/ioctl.h>
-#include <net/if.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <arpa/inet.h>
-#include <fcntl.h>
-#include <unistd.h>
+#include "sample_tunnel.h" //Change here for include in .h file
 
 /**************************************************************************
  * tun_alloc: allocates or reconnects to a tun/tap device. 

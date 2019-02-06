@@ -1,10 +1,10 @@
 #include "Router.h"
+#include "sample_tunnel.h"
 
 #define MAX_LENGTH 1024
 
 int Router::UDP_start()
 {
-    // this part of code is reused from Steven's book
     this->socketNumber=socket(AF_INET,SOCK_DGRAM,0);
     if(this->socketNumber<0)
     {
@@ -27,9 +27,19 @@ int Router::UDP_start()
     socklen_t addrlen;
     addrlen=sizeof(localaddr);
     getsockname(this->socketNumber,(struct sockaddr*) &localaddr,&addrlen);
-    // end of reused part
     this->portNumber=ntohs(localaddr.sin_port);
     return 0;
+}
+
+void Router::tunnel_start(char *tunnelName)
+{
+    this->tunnelNumber=tun_alloc(tunnelName, IFF_TUN | IFF_NO_PI); 
+
+    if(this->tunnelNumber<0)
+    {
+        printf("Error in open tunnel\n");
+        return;
+    }
 }
 
 void Router::open_log(const char * filename)
@@ -74,14 +84,20 @@ void Router::close_router()
     write_to_log(buf);
 }
 
+void Router::close_tunnel()
+{
+    close(this->tunnelNumber);
+    return;
+}
+
 void Router::udp_msg_send(char *msg, struct sockaddr* dst)
 {
     socklen_t len=sizeof(*dst);
-    printf("Router %d Sending:%s\n",this->routerNumber,msg);
+    //printf("Router %d Sending:%s\n",this->routerNumber,msg);
     sendto(socketNumber, msg, MAX_LENGTH, 0, dst, len);
 }
 
-void Router::udp_msg_send_port(char * msg,int portNumber)
+void Router::udp_msg_send_port(char * msg,int portNumber, int length=MAX_LENGTH)
 {
     
     struct sockaddr_in dst;
@@ -89,16 +105,126 @@ void Router::udp_msg_send_port(char * msg,int portNumber)
     dst.sin_addr.s_addr=htonl(INADDR_ANY);
     dst.sin_port=htons(portNumber);
     socklen_t len=sizeof(dst);
-    printf("Router %d Sending:%s\n",this->routerNumber,msg);
-    sendto(socketNumber,msg,MAX_LENGTH,0,(struct sockaddr *) &dst,len);
+    //printf("Router %d Sending:%s\n",this->routerNumber,msg);
+    int k=sendto(socketNumber,msg,length,0,(struct sockaddr *) &dst,len);
 }
 
-void Router::udp_wait_for_msg(char * msgBuf, int &incomePort)
+void Router::tun_msg_send(char * msg,int length)
+{
+    write(this->tunnelNumber,msg,length);
+    return;
+}
+
+int Router::udp_wait_for_msg(char * msgBuf, int &incomePort)
 {
     struct sockaddr_in src_addr; //Record the incoming message source
     socklen_t len=sizeof(src_addr);
     int count;
     count = recvfrom(socketNumber,msgBuf,MAX_LENGTH,0,(struct sockaddr*) &src_addr,&len);
-    printf("Router %d Receiving:%s\n",this->routerNumber,msgBuf);
+    //printf("Router %d Receiving:%s\n",this->routerNumber,msgBuf);
     incomePort=ntohs(src_addr.sin_port);
+    return count;
+}
+
+int max(int a,int b)
+{
+    if(a>b) return a;
+    else return b;
+}
+
+int Router::selUDPorTun(char* Buf,int &from,int &portNum, int &strlength)
+{
+    timeval myclock;
+    myclock.tv_sec=15;  //close the router after 15s idle
+    myclock.tv_usec=0;
+
+    fd_set rset;
+    FD_ZERO(&rset);
+    FD_SET(this->tunnelNumber,&rset);
+    FD_SET(this->socketNumber,&rset);
+   
+
+    int n=select(max(this->socketNumber,this->tunnelNumber)+1,&rset,NULL,NULL,&myclock);
+
+    if(n<0)
+    {
+        printf("Error While Select()\n");
+        return -1; 
+    }
+    else if(n==0)
+    {
+        //printf("Timeout\n");
+        return -1;
+    }
+    else
+    {
+        if(FD_ISSET(this->socketNumber, &rset))
+        {
+            strlength= this->udp_wait_for_msg(Buf,portNum);
+            from=0;
+            //printf("Receive a packet from port: %d\n",portNum);
+            return 0;
+        }
+        if(FD_ISSET(this->tunnelNumber,&rset))
+        {
+            int length=read(this->tunnelNumber,Buf,MAX_LENGTH);
+            if(length<0)
+            {
+                printf("Receive Error\n");
+                return -1;
+            }
+            from=1;
+            strlength=length;
+            //printf("Receive a packet from tunnel, the size is %d\n",length);
+            return 0;
+        }
+        else
+        {
+            //Do nothing here
+            return -1;
+        }
+        
+    }
+    
+}
+
+int Router::selUDP(char * Buf, int &portNum, int &strlength)
+{
+    timeval myclock;
+    myclock.tv_sec=15;  //close the router after 15s idle
+    myclock.tv_usec=0;
+
+    fd_set rset;
+    FD_ZERO(&rset);
+    FD_SET(this->socketNumber,&rset);
+   
+
+    int n=select(this->socketNumber+1,&rset,NULL,NULL,&myclock);
+
+    if(n<0)
+    {
+        printf("Error While Select()\n");
+        return -1; 
+    }
+    else if(n==0)
+    {
+        //printf("Timeout\n");
+        return -1;
+    }
+    else
+    {
+        if(FD_ISSET(this->socketNumber, &rset))
+        {
+            strlength=this->udp_wait_for_msg(Buf,portNum);
+            //printf("Receive a packet from port: %d\n",portNum);
+            return 0;
+        }
+        else
+        {
+            //Do nothing here
+            return -1;
+        }
+        
+    }
+    
 }

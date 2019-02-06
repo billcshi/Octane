@@ -32,7 +32,7 @@ void secondaryRouterMain(int number, int pid)
     sprintf(buf,"router: %d, pid: %d,port: %d\n",number,pid,my_port);
     my_router.write_to_log(buf);
     sprintf(buf,"%d",pid);
-    my_router.udp_msg_send_port(buf,primary_router_port);
+    my_router.udp_msg_send_port(buf,primary_router_port,1024);
     my_router.close_router();
     my_router.close_log();
 }
