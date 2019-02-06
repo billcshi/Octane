@@ -1,6 +1,6 @@
 all: proja
-proja: proja.o task_config.o ./Stage1/stage1main.o ./Stage2/stage2main.o ./Router/router.o ./GlobalVar.o
-	g++ -g ./task_config.o ./proja.o ./Stage1/stage1main.o ./Stage2/stage2main.o ./Router/router.o ./GlobalVar.o -o ./proja
+proja: proja.o task_config.o ./Stage1/stage1main.o ./Stage2/stage2main.o ./Router/router.o ./GlobalVar.o ./Router/sample_tunnel.o
+	g++ -g ./task_config.o ./proja.o ./Stage1/stage1main.o ./Stage2/stage2main.o ./Router/router.o ./Router/sample_tunnel.o ./GlobalVar.o -o ./proja
 proja.o: proja.cpp
 	g++ -g -c ./proja.cpp -o ./proja.o
 task_config.o: task_config.cpp
@@ -13,6 +13,8 @@ task_config.o: task_config.cpp
 	g++ -g -c ./Router/Router.cpp -o ./Router/router.o
 ./GlobalVar.o: ./GlobalVar.cpp
 	g++ -g -c ./GlobalVar.cpp -o ./GlobalVar.o
+./Router/sample_tunnel.o: ./Router/sample_tunnel.c
+	gcc -g -c ./Router/sample_tunnel.c -o ./Router/sample_tunnel.o
 clean:
 	rm -r ./*.o
 	rm -r ./Router/*.o

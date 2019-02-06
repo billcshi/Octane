@@ -10,11 +10,13 @@ void primaryRouterMainS2(Router *primary_router)
     char buf[1024];
     sprintf(buf,"primary port: %d\n",primary_router_port);
     primary_router->write_to_log(buf);
-    int port;
-    primary_router->udp_wait_for_msg(buf,port);
+    int clientport;
+    primary_router->udp_wait_for_msg(buf,clientport);
     char newbuf[60];
-    sprintf(newbuf,"router: %d, pid: %s, port:%d\n",1,buf,port);
+    sprintf(newbuf,"router: %d, pid: %s, port:%d\n",1,buf,clientport);
     primary_router->write_to_log(newbuf);
+
+    //After Init
 
     primary_router->close_router();
     primary_router->close_log();
@@ -31,6 +33,8 @@ void secondaryRouterMainS2(int number, int pid)
     my_router.write_to_log(buf);
     sprintf(buf,"%d",pid);
     my_router.udp_msg_send_port(buf,primary_router_port);
+
+    //After Init
 
     my_router.close_router();
     my_router.close_log();
