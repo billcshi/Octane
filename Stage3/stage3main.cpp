@@ -1,15 +1,15 @@
 #include <iostream>
 #include <unistd.h>
 
+#include "stage3main.h"
 #include "../Router/Router.h"
-#include "stage2main.h"
 #include "../Datagram/IPDatagram.h"
 #include "../Datagram/ICMPDatagram.h"
 #include "../Datagram/icmp_checksum.h"
 
-void primaryRouterMainS2(Router *primary_router)
+void primaryRouterMainS3(Router *primary_router)
 {
-    primary_router->open_log("stage2.r0.out");
+    primary_router->open_log("stage3.r0.out");
     char buf[1024];
     sprintf(buf,"primary port: %d\n",primary_router_port);
     primary_router->write_to_log(buf);
@@ -67,11 +67,11 @@ void primaryRouterMainS2(Router *primary_router)
     primary_router->close_log();
 }
 
-void secondaryRouterMainS2(int number, int pid)
+void secondaryRouterMainS3(int number, int pid)
 {
     Router my_router(number);
     char buf[1024],newbuf[1024];
-    sprintf(buf,"stage2.r%d.out",number);
+    sprintf(buf,"stage3.r%d.out",number);
     my_router.open_log(buf);
     int my_port=my_router.getPort();
     sprintf(buf,"router: %d, pid: %d,port: %d\n",number,pid,my_port);
@@ -135,7 +135,7 @@ void secondaryRouterMainS2(int number, int pid)
     my_router.close_log();
 }
 
-int stage2main(task_config *taskConfig)
+int stage3main(task_config *taskConfig)
 {
     int now_pid,my_number;
     Router primary_router(0);
@@ -161,11 +161,11 @@ int stage2main(task_config *taskConfig)
 
     if(now_pid==primary_pid)
     {
-        primaryRouterMainS2(&primary_router);
+        primaryRouterMainS3(&primary_router);
     }
     else
     {
-        secondaryRouterMainS2(my_number,now_pid);
+        secondaryRouterMainS3(my_number,now_pid);
     }
 
     return 0;

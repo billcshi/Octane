@@ -6,6 +6,7 @@
 #include "task_config.h"
 #include "Stage1/stage1main.h"
 #include "Stage2/stage2main.h"
+#include "Stage3/stage3main.h"
 #include "GlobalVar.h"
 
 int input_section(std::ifstream &inputStream, task_config* taskConfig)
@@ -36,6 +37,10 @@ int main(int argc, char ** argv)
     else if(taskConfig.stage==2)
     {
         stage2main(&taskConfig);
+    }
+    else if(taskConfig.stage==3)
+    {
+        stage3main(&taskConfig);
     }
     else
     {
