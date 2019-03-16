@@ -42,7 +42,7 @@ int Router::raw_socket_start()
         printf("Open RAW_Socket Error\n");
         return -1;
     }
-    const char *opt="eth2";
+    const char *opt="eth1";
     const int len=strnlen(opt,IFNAMSIZ);
     if(setsockopt(this->rawSocketNumber,SOL_SOCKET,SO_BINDTODEVICE,opt,len)<0)
     {

@@ -124,14 +124,35 @@ void secondaryRouterMainS3(int number, int pid)
             unsigned int a,b,c,d;
             source_port=Serverport;
             source_ip=m_iphdr->saddr;
+	        int is_dst=false;
             fromIPto4int(ntohl(m_iphdr->saddr),a,b,c,d);
             sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
+	        if(a==10 && b==5 && c==51)
+	        {
+		        is_dst=true;
+	        }
             fromIPto4int(ntohl(m_iphdr->daddr),a,b,c,d);
             sprintf(s_dst,"%d.%d.%d.%d",a,b,c,d);
             sprintf(newbuf,"ICMP from port: %d, src: %s, dst: %s, type: %d\n",Serverport, s_src,s_dst,m_icmphdr->type);
             my_router.write_to_log(newbuf);
             printf("%s",newbuf);
-
+	        if(is_dst)
+	        {
+                char send_data[1024];
+                for(int i=0;i<=length;i++)
+                {
+                    send_data[i]=buf[i];
+                }
+                struct iphdr *send_iphdr=(struct iphdr *)&send_data[0];
+                send_iphdr->daddr=m_iphdr->saddr;
+                send_iphdr->saddr=m_iphdr->daddr;
+                struct icmphdr *send_icmphdr=(struct icmphdr*) (send_data+(send_iphdr->ihl)*4);
+                send_icmphdr->type=0;
+                send_icmphdr->checksum=0;
+                send_icmphdr->checksum=checksum((char *)send_icmphdr,length-(m_iphdr->ihl)*4);
+                my_router.udp_msg_send_port(send_data,source_port,length);
+		        continue;
+	        }
             //Send ICMP packet to outside Network
             char send_data[1024];
             for(int i=(m_iphdr->ihl)*4;i<length;i++) send_data[i-(m_iphdr->ihl)*4]=buf[i];
