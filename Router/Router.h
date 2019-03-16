@@ -27,7 +27,7 @@ public:
     void close_tunnel();
     int UDP_start();
     void tunnel_start(char *);
-    int raw_socket_start();
+    int raw_socket_start(const char*);
 
     void udp_msg_send(char *,struct sockaddr*);
     void udp_msg_send_port(char *,int,int);

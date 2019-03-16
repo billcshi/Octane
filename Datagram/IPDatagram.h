@@ -40,6 +40,8 @@ public:
     }
 };
 
+void fromIPto4int(unsigned int IP,unsigned int &a,unsigned int &b,unsigned int &c,unsigned int &d);
+
 
 
 #endif

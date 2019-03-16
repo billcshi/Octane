@@ -10,18 +10,6 @@
 #include "../Datagram/ICMPDatagram.h"
 #include "../Datagram/icmp_checksum.h"
 
-void fromIPto4int(unsigned int IP,unsigned int &a,unsigned int &b,unsigned int &c,unsigned int &d)
-{
-    d=IP%0x100;
-    IP/=0x100;
-    c=IP%0x100;
-    IP/=0x100;
-    b=IP%0x100;
-    IP/=0x100;
-    a=IP;
-    return;
-}
-
 void primaryRouterMainS3(Router *primary_router)
 {
     primary_router->open_log("stage3.r0.out");
@@ -102,7 +90,7 @@ void secondaryRouterMainS3(int number, int pid)
     my_router.write_to_log(buf);
     sprintf(buf,"%d",pid);
     my_router.udp_msg_send_port(buf,primary_router_port,1024);
-    my_router.raw_socket_start();
+    my_router.raw_socket_start("eth1");
     //After Init
     uint32_t source_ip;
     int source_port;
