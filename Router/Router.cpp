@@ -159,7 +159,6 @@ void Router::raw_icmp_send(char *buffer,int length,void* v_iphdr)
     msgsent.msg_flags=0;
 
     int n=sendmsg(this->rawSocketNumber,&msgsent,0);
-    printf("Sending n=%d\n",n);
     if(n<0)
     {
         printf("SendMsgError\n");

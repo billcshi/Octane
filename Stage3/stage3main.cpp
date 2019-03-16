@@ -104,6 +104,8 @@ void secondaryRouterMainS3(int number, int pid)
     my_router.udp_msg_send_port(buf,primary_router_port,1024);
     my_router.raw_socket_start();
     //After Init
+    uint32_t source_ip;
+    int source_port;
     while(1)
     {
         int Serverport;
@@ -120,6 +122,8 @@ void secondaryRouterMainS3(int number, int pid)
             m_icmphdr=(struct icmphdr*) (buf+(m_iphdr->ihl)*4);
             char s_src[20],s_dst[20];
             unsigned int a,b,c,d;
+            source_port=Serverport;
+            source_ip=m_iphdr->saddr;
             fromIPto4int(ntohl(m_iphdr->saddr),a,b,c,d);
             sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
             fromIPto4int(ntohl(m_iphdr->daddr),a,b,c,d);
@@ -138,13 +142,33 @@ void secondaryRouterMainS3(int number, int pid)
             m_send_icmphdr->un.echo.id=m_icmphdr->un.echo.id;
             m_send_icmphdr->un.echo.sequence=m_icmphdr->un.echo.sequence;
             m_send_icmphdr->checksum=checksum((char *)m_send_icmphdr,length-(m_iphdr->ihl)*4);
-            
             my_router.raw_icmp_send(send_data,length-(m_iphdr->ihl)*4,m_iphdr);
         }
         else if(from==1)
         {//From Raw socket
-            printf("MSG FROM RAW\n");
-            continue;
+            //printf("MSG FROM RAW\n");
+            struct icmphdr *m_icmphdr;
+            struct iphdr *m_iphdr;
+            m_iphdr=(struct iphdr*) buf;
+            m_icmphdr=(struct icmphdr*) (buf+(m_iphdr->ihl)*4);
+            char s_src[20],s_dst[20];
+            unsigned int a,b,c,d;
+            fromIPto4int(ntohl(m_iphdr->saddr),a,b,c,d);
+            sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
+            fromIPto4int(ntohl(m_iphdr->daddr),a,b,c,d);
+            sprintf(s_dst,"%d.%d.%d.%d",a,b,c,d);
+            sprintf(newbuf,"ICMP from raw sock, src: %s, dst: %s, type: %d\n",s_src,s_dst,m_icmphdr->type);
+            my_router.write_to_log(newbuf);
+            printf("%s",newbuf);
+            
+            char send_data[1024];
+            for(int i=0;i<=length;i++)
+            {
+                send_data[i]=buf[i];
+            }
+            struct iphdr *send_iphdr=(struct iphdr *)&send_data[0];
+            send_iphdr->daddr=source_ip;
+            my_router.udp_msg_send_port(send_data,source_port,length);
         }
         else
         {
