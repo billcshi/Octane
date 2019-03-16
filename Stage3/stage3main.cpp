@@ -1,11 +1,26 @@
 #include <iostream>
 #include <unistd.h>
 
+#include <netinet/ip.h> //For IPhdr
+#include <netinet/ip_icmp.h> //For ICMPhdr
+
 #include "stage3main.h"
 #include "../Router/Router.h"
 #include "../Datagram/IPDatagram.h"
 #include "../Datagram/ICMPDatagram.h"
 #include "../Datagram/icmp_checksum.h"
+
+void fromIPto4int(unsigned int IP,unsigned int &a,unsigned int &b,unsigned int &c,unsigned int &d)
+{
+    d=IP%0x100;
+    IP/=0x100;
+    c=IP%0x100;
+    IP/=0x100;
+    b=IP%0x100;
+    IP/=0x100;
+    a=IP;
+    return;
+}
 
 void primaryRouterMainS3(Router *primary_router)
 {
@@ -33,13 +48,17 @@ void primaryRouterMainS3(Router *primary_router)
         if(from==0)
         {
             //from client
-            IPDatagram newIP(buf);
-            ICMPDatagram newICMP(&buf[20]);
+            struct icmphdr *m_icmphdr;
+            struct iphdr *m_iphdr;
+            m_iphdr=(struct iphdr*) buf;
+            m_icmphdr=(struct icmphdr*) (buf+(m_iphdr->ihl)*4);
             char s_src[20],s_dst[20];
-            sprintf(s_src,"%d.%d.%d.%d",newIP.src[0],newIP.src[1],newIP.src[2],newIP.src[3]);
-            sprintf(s_dst,"%d.%d.%d.%d",newIP.dst[0],newIP.dst[1],newIP.dst[2],newIP.dst[3]);
-
-            sprintf(newbuf,"ICMP from port: %d, src: %s, dst: %s, type: %d\n",portNum, s_src,s_dst,newICMP.Type);
+            unsigned int a,b,c,d;
+            fromIPto4int(ntohl(m_iphdr->saddr),a,b,c,d);
+            sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
+            fromIPto4int(ntohl(m_iphdr->daddr),a,b,c,d);
+            sprintf(s_dst,"%d.%d.%d.%d",a,b,c,d);
+            sprintf(newbuf,"ICMP from port: %d, src: %s, dst: %s, type: %d\n",portNum, s_src,s_dst,m_icmphdr->type);
             primary_router->write_to_log(newbuf);
             printf("%s",newbuf);
             //primary_router->udp_msg_send_port(buf,clientport,length);
@@ -47,13 +66,18 @@ void primaryRouterMainS3(Router *primary_router)
         }
         else
         {
-            IPDatagram newIP(buf);
-            ICMPDatagram newICMP(&buf[20]);
+            struct icmphdr *m_icmphdr;
+            struct iphdr *m_iphdr;
+            m_iphdr=(struct iphdr*) buf;
+            m_icmphdr=(struct icmphdr*) (buf+(m_iphdr->ihl)*4);
             char s_src[20],s_dst[20];
-            sprintf(s_src,"%d.%d.%d.%d",newIP.src[0],newIP.src[1],newIP.src[2],newIP.src[3]);
-            sprintf(s_dst,"%d.%d.%d.%d",newIP.dst[0],newIP.dst[1],newIP.dst[2],newIP.dst[3]);
+            unsigned int a,b,c,d;
+            fromIPto4int(ntohl(m_iphdr->saddr),a,b,c,d);
+            sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
+            fromIPto4int(ntohl(m_iphdr->daddr),a,b,c,d);
+            sprintf(s_dst,"%d.%d.%d.%d",a,b,c,d);
 
-            sprintf(newbuf,"ICMP from tunnel, src: %s, dst: %s, type: %d\n",s_src,s_dst,newICMP.Type);
+            sprintf(newbuf,"ICMP from tunnel, src: %s, dst: %s, type: %d\n",s_src,s_dst,m_icmphdr->type);
             primary_router->write_to_log(newbuf);
             printf("%s",newbuf);
             primary_router->udp_msg_send_port(buf,clientport,length);
@@ -78,58 +102,57 @@ void secondaryRouterMainS3(int number, int pid)
     my_router.write_to_log(buf);
     sprintf(buf,"%d",pid);
     my_router.udp_msg_send_port(buf,primary_router_port,1024);
-
+    my_router.raw_socket_start();
     //After Init
     while(1)
     {
         int Serverport;
         int length;
-        int state=my_router.selUDP(buf,Serverport,length);
+        int from;
+        int state=my_router.selUDPorRaw(buf,from,Serverport,length);
         if(state == -1) break;
 
-        IPDatagram newIP(buf);
-        ICMPDatagram newICMP(&buf[20]);
-        char s_src[20],s_dst[20];
-        sprintf(s_src,"%d.%d.%d.%d",newIP.src[0],newIP.src[1],newIP.src[2],newIP.src[3]);
-        sprintf(s_dst,"%d.%d.%d.%d",newIP.dst[0],newIP.dst[1],newIP.dst[2],newIP.dst[3]);
+        if(from==0)
+        {//From UDP socket
+            struct icmphdr *m_icmphdr;
+            struct iphdr *m_iphdr;
+            m_iphdr=(struct iphdr*) buf;
+            m_icmphdr=(struct icmphdr*) (buf+(m_iphdr->ihl)*4);
+            char s_src[20],s_dst[20];
+            unsigned int a,b,c,d;
+            fromIPto4int(ntohl(m_iphdr->saddr),a,b,c,d);
+            sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
+            fromIPto4int(ntohl(m_iphdr->daddr),a,b,c,d);
+            sprintf(s_dst,"%d.%d.%d.%d",a,b,c,d);
+            sprintf(newbuf,"ICMP from port: %d, src: %s, dst: %s, type: %d\n",Serverport, s_src,s_dst,m_icmphdr->type);
+            my_router.write_to_log(newbuf);
+            printf("%s",newbuf);
 
-        sprintf(newbuf,"ICMP from port: %d, src: %s, dst: %s, type: %d\n",Serverport, s_src,s_dst,newICMP.Type);
-        my_router.write_to_log(newbuf);
-        printf("%s",newbuf);
-        //printf("Receive Package Size:%d Byte",length);
-        
-        char replyDatagram[1024];
-        for(int i=0;i<length;i++) replyDatagram[i]=buf[i];
-        replyDatagram[length]='\0';
-        //set TTL=64
-        replyDatagram[8]=64;
-        //set checksum=0 in IP
-        replyDatagram[10]=0;
-        replyDatagram[11]=0;
-        //revert src, dst
-        replyDatagram[12]=buf[16]; replyDatagram[16]=buf[12];
-        replyDatagram[13]=buf[17]; replyDatagram[17]=buf[13];
-        replyDatagram[14]=buf[18]; replyDatagram[18]=buf[14];
-        replyDatagram[15]=buf[19]; replyDatagram[19]=buf[15];
-        unsigned short IP_checksum=checksum(&replyDatagram[20],20);
-        replyDatagram[10]=IP_checksum/256;
-        replyDatagram[11]=IP_checksum%256;
-
-        // ICMP type=0
-        replyDatagram[20]=0;
-        // set ICMP_checksum=0
-        replyDatagram[22]=0;
-        replyDatagram[23]=0;
-
-        unsigned short ICMP_checksum=checksum(&replyDatagram[20],length-20);
-        replyDatagram[22]=ICMP_checksum%256;
-        replyDatagram[23]=ICMP_checksum/256;
-        //printf("ICMP_checksum=%d %d %d\n",ICMP_checksum,replyDatagram[22],replyDatagram[23]);
-
-        my_router.udp_msg_send_port(replyDatagram,Serverport,length);
+            //Send ICMP packet to outside Network
+            char send_data[1024];
+            for(int i=(m_iphdr->ihl)*4;i<length;i++) send_data[i-(m_iphdr->ihl)*4]=buf[i];
+            struct icmphdr * m_send_icmphdr=(struct icmphdr *)&send_data[0];
+            m_send_icmphdr->type=ICMP_ECHO;
+            m_send_icmphdr->code=m_icmphdr->code;
+            m_send_icmphdr->checksum=0;
+            m_send_icmphdr->un.echo.id=m_icmphdr->un.echo.id;
+            m_send_icmphdr->un.echo.sequence=m_icmphdr->un.echo.sequence;
+            m_send_icmphdr->checksum=checksum((char *)m_send_icmphdr,length-(m_iphdr->ihl)*4);
+            
+            my_router.raw_icmp_send(send_data,length-(m_iphdr->ihl)*4,m_iphdr);
+        }
+        else if(from==1)
+        {//From Raw socket
+            printf("MSG FROM RAW\n");
+            continue;
+        }
+        else
+        {
+            break;
+        }
     }
 
-    printf("Client Close\n");
+    printf("Client %d Close\n",number);
 
     my_router.close_router();
     my_router.close_log();

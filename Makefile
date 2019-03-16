@@ -24,6 +24,7 @@ clean:
 	rm -r ./Router/*.o
 	rm -r ./Stage1/*.o
 	rm -r ./Stage2/*.o
+	rm -r ./Stage3/*.o
 	rm -r ./proja
 	rm -r ./*.out
 stage1clean:
