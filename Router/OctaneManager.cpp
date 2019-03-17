@@ -24,7 +24,7 @@ void OctaneManager::Rule_Install(octane_control* my_octane_hdr)
     char newbuf[1024];
     fromIPto4int(ntohl(new_Rule.SIP),a,b,c,d);
     sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
-    fromIPto4int(ntohl(new_Rule.SIP),a,b,c,d);
+    fromIPto4int(ntohl(new_Rule.DIP),a,b,c,d);
     sprintf(s_dst,"%d.%d.%d.%d",a,b,c,d);
     sprintf(newbuf,"router: %d, rule installed (%s, %d, %s, %d, %d) action %d\n",m_Router->getRouterNumber(), s_src,src_port, s_dst, dst_port, new_Rule.PROTOCOL, new_Rule.ACTION);
     m_Router->write_to_log(newbuf);
