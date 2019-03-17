@@ -7,6 +7,7 @@
 #include <sys/select.h>
 #include <sys/time.h>
 #include <netinet/in.h>
+#include "OctaneManager.h"
 
 class Router{
 public:
@@ -41,7 +42,9 @@ public:
 
     int getPort() {return portNumber;}
     int getRouterNumber() {return routerNumber;}
-private:
+    bool isIdle=false;
+    bool isGoingtoStop=false;
+//private:
     FILE *fp_log;
     int socketNumber;
     int rawSocketNumber;
@@ -49,6 +52,7 @@ private:
     int RAWportNumber;
     int routerNumber;
     int tunnelNumber;
+    OctaneManager * m_OctaneManager;
     struct sockaddr_in routeraddr;
     struct sockaddr_in raw_socket_addr;
     bool islogOpen=false;

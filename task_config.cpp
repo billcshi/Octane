@@ -5,6 +5,7 @@
 
 #define stage_fieldname "stage"
 #define num_routers_fieldname "num_routers"
+#define drop_after_fieldname "drop_after"
 
 void task_config::update_config(char * inputString)
 {
@@ -20,31 +21,46 @@ void task_config::update_config(char * inputString)
     {
         char number[20];
         i++;
-	int j=0;
+	    int j=0;
         while(inputString[i]!='\0')
         {
             number[j]=inputString[i];
             i++;
 	    j++;
         }
-	number[j]='\0';
+	    number[j]='\0';
         int i_number=std::stoi(number);
         stage=i_number;
     }
     else if(std::strcmp(field,num_routers_fieldname)==0)
     {
-	char number[20];
+	    char number[20];
         i++;
-	int j=0;
+	    int j=0;
         while(inputString[i]!='\0')
         {
             number[j]=inputString[i];
             i++;
 	    j++;
         }
-	number[j]='\0';
+	    number[j]='\0';
         int i_number=std::stoi(number);
         num_routers=i_number;
+    }
+    else if(std::strcmp(field,drop_after_fieldname)==0)
+    {
+        char number[20];
+        i++;
+        int j=0;
+        while(inputString[i]!='\0')
+        {
+            number[j]=inputString[i];
+            i++;
+	    j++;
+        }
+	    number[j]='\0';
+        int i_number=std::stoi(number);
+        drop_after=i_number;
     }
     else
     {
