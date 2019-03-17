@@ -35,7 +35,7 @@ void primaryRouterMainS4(PrimaryRouter *primary_router)
     primary_router->close_log();
 }
 
-void secondaryRouterMainS4(int number, int pid)
+void secondaryRouterMainS4(int number, int pid, int drop_after)
 {
     Router my_router(number);
     char buf[1024],newbuf[1024];
@@ -51,6 +51,7 @@ void secondaryRouterMainS4(int number, int pid)
     //Init OctaneManager 
     my_router.m_OctaneManager=new OctaneManager();
     (my_router.m_OctaneManager)->set_m_Router(&my_router);
+    my_router.m_OctaneManager->drop_after=drop_after;
     //After Init
     uint32_t source_ip;
     int source_port;
@@ -193,7 +194,7 @@ int stage4main(task_config *taskConfig)
     }
     else
     {
-        secondaryRouterMainS4(my_number,now_pid);
+        secondaryRouterMainS4(my_number,now_pid,taskConfig->drop_after);
     }
 
     return 0;

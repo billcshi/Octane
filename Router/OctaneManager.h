@@ -26,9 +26,9 @@ public:
     void Rule_Install(octane_control *);
     uint8_t Rule_Check(iphdr *);
     void set_m_Router(Router *p_Router);
+    int drop_after=-1;
 private:
     std::vector<OctaneRule> RuleList;
     Router * m_Router;
-    int drop_after;
 };
 #endif
