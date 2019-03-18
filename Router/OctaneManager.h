@@ -7,6 +7,8 @@
 #include <netinet/ip.h> //For IPhdr
 #include <netinet/ip_icmp.h> //For ICMPhdr
 
+#define NONACTION 0xFF
+
 class Router;
 
 struct OctaneRule{
@@ -24,7 +26,7 @@ public:
     OctaneManager(){}
     ~OctaneManager(){}
     void Rule_Install(octane_control *);
-    uint8_t Rule_Check(iphdr *);
+    uint8_t Rule_Check(iphdr* my_iphdr,uint16_t &port);
     void set_m_Router(Router *p_Router);
     int drop_after=-1;
 private:

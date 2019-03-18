@@ -32,9 +32,37 @@ void OctaneManager::Rule_Install(octane_control* my_octane_hdr)
     return;
 }
 
-uint8_t OctaneManager::Rule_Check(iphdr* my_iphdr)
+uint8_t OctaneManager::Rule_Check(iphdr* my_iphdr,uint16_t &port)
 {//Input: IPPacket, Output: Return Action
-    return 1;
+    for(auto i=RuleList.begin();i!=RuleList.end();i++)
+    {
+        if(my_iphdr->saddr==i->SIP || i->SIP==ANY_IP)
+        {
+            if(my_iphdr->daddr==i->DIP || i->DIP==ANY_IP)
+            {
+                if(my_iphdr->protocol==i->PROTOCOL)
+                {
+                    if(my_iphdr->protocol==1)
+                    {//ICMP without port
+                        char s_src[20],s_dst[20];
+                        char newbuf[1024];
+                        unsigned int a,b,c,d;
+                        fromIPto4int(ntohl(i->SIP),a,b,c,d);
+                        sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
+                        fromIPto4int(ntohl(i->DIP),a,b,c,d);
+                        sprintf(s_dst,"%d.%d.%d.%d",a,b,c,d);
+                        sprintf(newbuf,"router: %d, rule hit (%s, %d, %s, %d, %d) action %d\n",this->m_Router->getRouterNumber(),s_src,i->SPORT,s_dst,i->DPORT,i->PROTOCOL,i->ACTION);
+                        this->m_Router->write_to_log(newbuf);
+                        printf("%s",newbuf);
+                        port=i->PORT;
+                        return i->ACTION;
+                    }
+                }
+            }
+        }
+    }
+    port=0;
+    return NONACTION;
 }
 
 void OctaneManager::set_m_Router(Router *p_Router)

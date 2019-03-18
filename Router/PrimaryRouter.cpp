@@ -38,6 +38,7 @@ void PrimaryRouter::start(int clientport)
     m_timerManager->AddTimer(15000,tcb); //IF Idle more than 15 s than stop the router
     while(1)
     {
+        int act=1;
         m_timerManager->NextTimerTime(&tv);
         if (tv.tv_sec == 0 && tv.tv_usec == 0) {
             m_timerManager->ExecuteNextTimer();
@@ -82,10 +83,10 @@ void PrimaryRouter::start(int clientport)
             }
             else break; //should not go here
         }
+        struct icmphdr *m_icmphdr;
+        struct iphdr *m_iphdr;
         if(from ==0)
         {
-            struct icmphdr *m_icmphdr;
-            struct iphdr *m_iphdr;
             m_iphdr=(struct iphdr*) buf;
             if(m_iphdr->protocol==253)
             {
@@ -107,25 +108,21 @@ void PrimaryRouter::start(int clientport)
                 sprintf(newbuf,"ICMP from port: %d, src: %s, dst: %s, type: %d\n",portNum, s_src,s_dst,m_icmphdr->type);
                 this->write_to_log(newbuf);
                 printf("%s",newbuf);
-                this->tun_msg_send(buf,length);
             }
             else
             {
                 //Nothing here
                 continue;
             }
-            
         }
         else
         {
-            struct icmphdr *m_icmphdr;
-            struct iphdr *m_iphdr;
             m_iphdr=(struct iphdr*) buf;
             m_icmphdr=(struct icmphdr*) (buf+(m_iphdr->ihl)*4);
             char s_src[20],s_dst[20];
             char newbuf[1024];
             unsigned int a,b,c,d;
-            int act=1;
+            
             fromIPto4int(ntohl(m_iphdr->saddr),a,b,c,d);
             sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
             fromIPto4int(ntohl(m_iphdr->daddr),a,b,c,d);
@@ -137,13 +134,19 @@ void PrimaryRouter::start(int clientport)
             sprintf(newbuf,"ICMP from tunnel, src: %s, dst: %s, type: %d\n",s_src,s_dst,m_icmphdr->type);
             this->write_to_log(newbuf);
             printf("%s",newbuf);
+        }
 
+        uint16_t output_port;
+        uint8_t my_action=this->m_OctaneManager->Rule_Check(m_iphdr,output_port);
+        if(my_action==NONACTION)
+        {
             //Add control Msg to own table
+            char newbuf[1024];
             {
                 octane_control* new_control_packet=(octane_control *)&newbuf[0];
                 //From tun1 to secondary router
                 new_control_packet->octane_action=1;
-                new_control_packet->octane_port=this->getPort();
+                new_control_packet->octane_port=clientport;
                 new_control_packet->octane_flags=0;
                 new_control_packet->octane_seqno=m_seqno;
                 m_seqno++;
@@ -202,7 +205,7 @@ void PrimaryRouter::start(int clientport)
                 }
                 {
                     new_control_packet->octane_action=1;
-                    new_control_packet->octane_port=clientport;
+                    new_control_packet->octane_port=this->getPort();
                     new_control_packet->octane_flags=0;
                     new_control_packet->octane_seqno=m_seqno;
                     m_seqno++;
@@ -235,7 +238,7 @@ void PrimaryRouter::start(int clientport)
                 new_iphdr->check=checksum((char *)new_iphdr,20);
                 octane_control* new_control_packet=(octane_control*)&newbuf[20];
                 new_control_packet->octane_action=2;
-                new_control_packet->octane_port=0;
+                new_control_packet->octane_port=this->getPort();
                 new_control_packet->octane_flags=0;
                 new_control_packet->octane_seqno=m_seqno;
                 m_seqno++;
@@ -249,8 +252,41 @@ void PrimaryRouter::start(int clientport)
                 seqno_to_handle[new_control_packet->octane_seqno]=h;
                 this->udp_msg_send_port((char*) new_iphdr,clientport,20+sizeof(octane_control));
             }
+            my_action=this->m_OctaneManager->Rule_Check(m_iphdr,output_port);
+        }
+        if(my_action==1)
+        {//Forward
+            char newbuf[1024];
+            for(int i=0;i<length;i++)
+            {
+                newbuf[i]=buf[i];
+            }
+            if(output_port==0)
+            {//Output to tun
+                this->tun_msg_send((char *)newbuf,length);
+            }
+            else
+            {
+                this->udp_msg_send_port((char*)newbuf,output_port,length);
+            }
             
-            this->udp_msg_send_port(buf,clientport,length);
+
+        }
+        else if(my_action==2)
+        {//Reply
+            continue;
+        }
+        else if(my_action==3)
+        {//Drop
+            continue;
+        }
+        else if(my_action==4)
+        {//Remove
+            continue;
+        }
+        else
+        {// Should not go here
+            continue;
         }
         
     }
