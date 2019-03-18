@@ -13,6 +13,7 @@ public:
         m_OctaneManager->set_m_Router(this);
     };
     void start(int);
+    int serverPort;
 private:
     Timers *m_timerManager;
     std::map<std::pair<uint16_t,uint16_t>,uint32_t> ICMP_ID_SEQ_TO_IP;

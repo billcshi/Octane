@@ -39,12 +39,14 @@ public:
         m_OctaneManager->set_m_Router(this);
     };
     void start(int);
-
+    void startv2();
+    int clientPort[5]={};
 private:
     Timers *m_timerManager;
     OctaneManager *m_OctaneManager;
     int m_seqno=1;
     std::map<int,handle> seqno_to_handle;
+
 };
 
 #endif

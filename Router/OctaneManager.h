@@ -6,6 +6,7 @@
 
 #include <netinet/ip.h> //For IPhdr
 #include <netinet/ip_icmp.h> //For ICMPhdr
+#include <netinet/tcp.h> //For TCPhdr
 
 #define NONACTION 0xFF
 

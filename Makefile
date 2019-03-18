@@ -1,6 +1,6 @@
 all: proja
-proja: proja.o task_config.o ./Stage1/stage1main.o ./Stage2/stage2main.o ./Stage3/stage3main.o ./Stage4/stage4main.o ./Stage5/stage5main.o ./timers/tools.o ./timers/timers.o ./Router/OctaneManager.o ./Router/router.o ./Router/PrimaryRouter.o ./Router/SecondaryRouter.o ./GlobalVar.o ./Router/sample_tunnel.o ./Datagram/IPDatagram.o ./Datagram/icmp_checksum.o
-	g++ -g ./task_config.o ./proja.o ./Stage1/stage1main.o ./Stage2/stage2main.o ./Stage3/stage3main.o ./Stage4/stage4main.o ./Stage5/stage5main.o ./timers/tools.o ./timers/timers.o ./Router/OctaneManager.o ./Router/router.o ./Router/PrimaryRouter.o ./Router/SecondaryRouter.o ./Router/sample_tunnel.o ./GlobalVar.o ./Datagram/IPDatagram.o ./Datagram/icmp_checksum.o -o ./proja
+proja: proja.o task_config.o ./Stage1/stage1main.o ./Stage2/stage2main.o ./Stage3/stage3main.o ./Stage4/stage4main.o ./Stage5/stage5main.o ./Stage6/stage6main.o ./timers/tools.o ./timers/timers.o ./Router/OctaneManager.o ./Router/router.o ./Router/PrimaryRouter.o ./Router/SecondaryRouter.o ./GlobalVar.o ./Router/sample_tunnel.o ./Datagram/IPDatagram.o ./Datagram/icmp_checksum.o
+	g++ -g ./task_config.o ./proja.o ./Stage1/stage1main.o ./Stage2/stage2main.o ./Stage3/stage3main.o ./Stage4/stage4main.o ./Stage5/stage5main.o ./Stage6/stage6main.o ./timers/tools.o ./timers/timers.o ./Router/OctaneManager.o ./Router/router.o ./Router/PrimaryRouter.o ./Router/SecondaryRouter.o ./Router/sample_tunnel.o ./GlobalVar.o ./Datagram/IPDatagram.o ./Datagram/icmp_checksum.o -o ./proja
 proja.o: proja.cpp
 	g++ -g -c ./proja.cpp -o ./proja.o
 task_config.o: task_config.cpp
@@ -15,6 +15,8 @@ task_config.o: task_config.cpp
 	g++ -g -c ./Stage4/stage4main.cpp -o ./Stage4/stage4main.o
 ./Stage5/stage5main.o: ./Stage5/stage5main.cpp
 	g++ -g -c ./Stage5/stage5main.cpp -o ./Stage5/stage5main.o
+./Stage6/stage6main.o: ./Stage6/stage6main.cpp
+	g++ -g -c ./Stage6/stage6main.cpp -o ./Stage6/stage6main.o
 ./Router/router.o: ./Router/Router.cpp
 	g++ -g -c ./Router/Router.cpp -o ./Router/router.o
 ./Router/OctaneManager.o: ./Router/OctaneManager.cpp
@@ -43,6 +45,7 @@ clean:
 	rm -r ./Stage3/*.o
 	rm -r ./Stage4/*.o
 	rm -r ./Stage5/*.o
+	rm -r ./Stage6/*.o
 	rm -r ./Datagram/*.o
 	rm -r ./timers/*.o
 	rm -r ./proja

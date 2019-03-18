@@ -75,19 +75,38 @@ void SecondaryRouter::start(int serverport)
         }
 
         {
-            struct icmphdr *m_icmphdr;
-            m_icmphdr=(struct icmphdr*) (buf+(m_iphdr->ihl)*4);
-            char s_src[20],s_dst[20];
-            char newbuf[1024];
-            unsigned int a,b,c,d;
-            fromIPto4int(ntohl(m_iphdr->saddr),a,b,c,d);
-            sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
-            fromIPto4int(ntohl(m_iphdr->daddr),a,b,c,d);
-            sprintf(s_dst,"%d.%d.%d.%d",a,b,c,d);
-            if(from ==0) sprintf(newbuf,"ICMP from port: %d, src: %s, dst: %s, type: %d\n",serverport, s_src,s_dst,m_icmphdr->type);
-            else sprintf(newbuf,"ICMP from raw sock, src: %s, dst: %s, type: %d\n", s_src,s_dst,m_icmphdr->type);
-            this->write_to_log(newbuf);
-            printf("%s",newbuf);
+            if(m_iphdr->protocol==1)
+            {
+                struct icmphdr *m_icmphdr;
+                m_icmphdr=(struct icmphdr*) (buf+(m_iphdr->ihl)*4);
+                char s_src[20],s_dst[20];
+                char newbuf[1024];
+                unsigned int a,b,c,d;
+                fromIPto4int(ntohl(m_iphdr->saddr),a,b,c,d);
+                sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
+                fromIPto4int(ntohl(m_iphdr->daddr),a,b,c,d);
+                sprintf(s_dst,"%d.%d.%d.%d",a,b,c,d);
+                if(from ==0) sprintf(newbuf,"ICMP from port: %d, src: %s, dst: %s, type: %d\n",serverport, s_src,s_dst,m_icmphdr->type);
+                else sprintf(newbuf,"ICMP from raw sock, src: %s, dst: %s, type: %d\n", s_src,s_dst,m_icmphdr->type);
+                this->write_to_log(newbuf);
+                printf("%s",newbuf);
+            }
+            else if(m_iphdr->protocol==6)
+            {
+                struct tcphdr *m_tcphdr;
+                m_tcphdr=(struct tcphdr*) (buf+(m_iphdr->ihl)*4);
+                char s_src[20],s_dst[20];
+                unsigned int a,b,c,d;
+                char newbuf[1024];
+                fromIPto4int(ntohl(m_iphdr->saddr),a,b,c,d);
+                sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
+                fromIPto4int(ntohl(m_iphdr->daddr),a,b,c,d);
+                sprintf(s_dst,"%d.%d.%d.%d",a,b,c,d);
+                sprintf(newbuf,"TCP from port: %d, (%s, %d, %s, %d)\n",portNum, s_src,m_tcphdr->source,s_dst,m_tcphdr->dest);
+                this->write_to_log(newbuf);
+                printf("%s",newbuf);
+            }
+            
         }
 
         uint16_t output_port;
@@ -114,8 +133,16 @@ void SecondaryRouter::start(int serverport)
                     this->raw_icmp_send(send_data,length-(m_iphdr->ihl)*4,m_iphdr);
                     continue;
                 }
+                else if(m_iphdr->protocol==6)
+                {
+                    for(int i=(m_iphdr->ihl)*4;i<length;i++) send_data[i-(m_iphdr->ihl)*4]=buf[i];
+                    struct tcphdr * m_tcphdr=(struct tcphdr*) &send_data[0];
+                    ICMP_ID_SEQ_TO_IP[std::make_pair(m_tcphdr->source,m_tcphdr->dest)]=m_iphdr->saddr;
+                    this->raw_icmp_send(send_data,length-(m_iphdr->ihl)*4,m_iphdr);
+                }
                 else
                 {//Other Protocol
+                    
                     continue;
                 }
             }
@@ -131,6 +158,13 @@ void SecondaryRouter::start(int serverport)
                 {//Need to change the dst_ip in header
                     struct icmphdr * m_send_icmphdr=(struct icmphdr*) (send_data+(m_iphdr->ihl)*4);
                     m_send_iphdr->daddr=ICMP_ID_SEQ_TO_IP[std::make_pair(m_send_icmphdr->un.echo.id,m_send_icmphdr->un.echo.sequence)];
+                    m_send_iphdr->check=0;
+                    m_send_iphdr->check=checksum((char *)m_send_iphdr,m_send_iphdr->ihl*4);
+                }
+                else if(m_send_iphdr->protocol==6)
+                {
+                    struct tcphdr * m_send_tcphdr=(struct tcphdr*) (send_data+(m_iphdr->ihl)*4);
+                    m_send_iphdr->daddr=ICMP_ID_SEQ_TO_IP[std::make_pair(m_send_tcphdr->dest,m_send_tcphdr->source)];
                     m_send_iphdr->check=0;
                     m_send_iphdr->check=checksum((char *)m_send_iphdr,m_send_iphdr->ihl*4);
                 }
