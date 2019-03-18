@@ -2,6 +2,8 @@
 #include "Router.h"
 #include "../Datagram/IPDatagram.h"
 
+#include <iostream>
+
 void OctaneManager::Rule_Install(octane_control* my_octane_hdr)
 {//Input: Octane_Control_Message, Insert into Rulelist
     OctaneRule new_Rule;
@@ -26,7 +28,9 @@ void OctaneManager::Rule_Install(octane_control* my_octane_hdr)
     sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
     fromIPto4int(ntohl(new_Rule.DIP),a,b,c,d);
     sprintf(s_dst,"%d.%d.%d.%d",a,b,c,d);
-    sprintf(newbuf,"router: %d, rule installed (%s, %d, %s, %d, %d) action %d\n",m_Router->getRouterNumber(), s_src,src_port, s_dst, dst_port, new_Rule.PROTOCOL, new_Rule.ACTION);
+    uint16_t source_port=htons(new_Rule.SPORT);
+    uint16_t dest_port=htons(new_Rule.DPORT);
+    sprintf(newbuf,"router: %d, rule installed (%s, %d, %s, %d, %d) action %d\n",m_Router->getRouterNumber(), s_src,source_port, s_dst, dest_port, new_Rule.PROTOCOL, new_Rule.ACTION);
     m_Router->write_to_log(newbuf);
     printf("%s",newbuf);
     return;
@@ -42,7 +46,7 @@ uint8_t OctaneManager::Rule_Check(iphdr* my_iphdr,uint16_t &port)
             {
                 if(my_iphdr->protocol==i->PROTOCOL)
                 {
-                    if(my_iphdr->protocol==1)
+                    if(my_iphdr->protocol==1 || true)
                     {//ICMP without port
                         char s_src[20],s_dst[20];
                         char newbuf[1024];
@@ -51,7 +55,9 @@ uint8_t OctaneManager::Rule_Check(iphdr* my_iphdr,uint16_t &port)
                         sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
                         fromIPto4int(ntohl(i->DIP),a,b,c,d);
                         sprintf(s_dst,"%d.%d.%d.%d",a,b,c,d);
-                        sprintf(newbuf,"router: %d, rule hit (%s, %d, %s, %d, %d) action %d port %d\n",this->m_Router->getRouterNumber(),s_src,i->SPORT,s_dst,i->DPORT,i->PROTOCOL,i->ACTION,i->PORT);
+                        uint16_t source_port=htons(i->SPORT);
+                        uint16_t dest_port=htons(i->DPORT);
+                        sprintf(newbuf,"router: %d, rule hit (%s, %d, %s, %d, %d) action %d port %d\n",this->m_Router->getRouterNumber(),s_src,source_port,s_dst,dest_port,i->PROTOCOL,i->ACTION,i->PORT);
                         this->m_Router->write_to_log(newbuf);
                         printf("%s",newbuf);
                         port=i->PORT;

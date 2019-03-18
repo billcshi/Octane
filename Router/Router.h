@@ -29,12 +29,14 @@ public:
     int UDP_start();
     void tunnel_start(char *);
     int raw_socket_start(const char*);
+    int raw_tcp_socket_start(const char*);
 
     void udp_msg_send(char *,struct sockaddr*);
     void udp_msg_send_port(char *,int,int);
     int udp_wait_for_msg(char *,int&);
     void tun_msg_send(char *,int);
     void raw_icmp_send(char *,int,void*);
+    void raw_tcp_send(char *,int,void*,void*);
 
     int selUDPorTun(char* Buf,int &from,int &portNum, int &strlength);
     int selUDPorRaw(char* Buf,int &from,int &portNum, int &strlength);
@@ -48,6 +50,7 @@ public:
     FILE *fp_log;
     int socketNumber;
     int rawSocketNumber;
+    int rawTCPSocketNumber;
     int portNumber;
     int RAWportNumber;
     int routerNumber;

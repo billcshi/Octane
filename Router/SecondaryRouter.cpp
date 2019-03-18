@@ -102,7 +102,8 @@ void SecondaryRouter::start(int serverport)
                 sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
                 fromIPto4int(ntohl(m_iphdr->daddr),a,b,c,d);
                 sprintf(s_dst,"%d.%d.%d.%d",a,b,c,d);
-                sprintf(newbuf,"TCP from port: %d, (%s, %d, %s, %d)\n",portNum, s_src,m_tcphdr->source,s_dst,m_tcphdr->dest);
+                if(from==0) sprintf(newbuf,"TCP from port: %d, (%s, %d, %s, %d)\n",portNum, s_src,m_tcphdr->source,s_dst,m_tcphdr->dest);
+                else sprintf(newbuf,"TCP from raw sock, (%s, %d, %s, %d)\n",s_src,m_tcphdr->source,s_dst,m_tcphdr->dest);
                 this->write_to_log(newbuf);
                 printf("%s",newbuf);
             }
@@ -138,7 +139,7 @@ void SecondaryRouter::start(int serverport)
                     for(int i=(m_iphdr->ihl)*4;i<length;i++) send_data[i-(m_iphdr->ihl)*4]=buf[i];
                     struct tcphdr * m_tcphdr=(struct tcphdr*) &send_data[0];
                     ICMP_ID_SEQ_TO_IP[std::make_pair(m_tcphdr->source,m_tcphdr->dest)]=m_iphdr->saddr;
-                    this->raw_icmp_send(send_data,length-(m_iphdr->ihl)*4,m_iphdr);
+                    this->raw_tcp_send(send_data,length-(m_iphdr->ihl)*4,m_iphdr,m_tcphdr);
                 }
                 else
                 {//Other Protocol

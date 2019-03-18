@@ -26,6 +26,7 @@ void primaryRouterMainS6(int number, PrimaryRouter *primary_router)
         sscanf(buf,"%d%d",&routernumber,&routerpid);
         char newbuf[1024];
         sprintf(newbuf,"router: %d, pid: %d, port:%d\n",routernumber,routerpid,clientport);
+        primary_router->write_to_log(newbuf);
         primary_router->clientPort[routernumber]=clientport;
     }
     //After Init
@@ -54,6 +55,7 @@ void secondaryRouterMainS6(int number, int pid, int drop_after)
     char eth[5];
     sprintf(eth,"eth%d",number);
     my_router.raw_socket_start(eth);
+    my_router.raw_tcp_socket_start(eth);
     my_router.serverPort=primary_router_port;
     my_router.start(primary_router_port);
 

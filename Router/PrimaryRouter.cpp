@@ -1,6 +1,6 @@
 #include "PrimaryRouter.h"
 #include <stdio.h>
-
+#include <iostream>
 #include "../Datagram/IPDatagram.h"
 #include "../Datagram/icmp_checksum.h"
 
@@ -389,7 +389,9 @@ void PrimaryRouter::startv2() //For Stage6 Stage7
                 sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
                 fromIPto4int(ntohl(m_iphdr->daddr),a,b,c,d);
                 sprintf(s_dst,"%d.%d.%d.%d",a,b,c,d);
-                sprintf(newbuf,"TCP from port: %d, (%s, %d, %s, %d)\n",portNum, s_src,m_tcphdr->source,s_dst,m_tcphdr->dest);
+                uint16_t source_port=htons(m_tcphdr->source);
+                uint16_t dest_port=htons(m_tcphdr->dest);
+                sprintf(newbuf,"TCP from port: %d, (%s, %d, %s, %d)\n",portNum, s_src,source_port,s_dst,dest_port);
                 this->write_to_log(newbuf);
                 printf("%s",newbuf);
             }
@@ -432,7 +434,9 @@ void PrimaryRouter::startv2() //For Stage6 Stage7
                 sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
                 fromIPto4int(ntohl(m_iphdr->daddr),a,b,c,d);
                 sprintf(s_dst,"%d.%d.%d.%d",a,b,c,d);
-                sprintf(newbuf,"TCP from tunnel, (%s, %d, %s, %d)\n",s_src,m_tcphdr->source,s_dst,m_tcphdr->dest);
+                uint16_t source_port=htons(m_tcphdr->source);
+                uint16_t dest_port=htons(m_tcphdr->dest);
+                sprintf(newbuf,"TCP from tunnel, (%s, %d, %s, %d)\n",s_src,source_port,s_dst,dest_port);
                 this->write_to_log(newbuf);
                 printf("%s",newbuf);
             }
@@ -483,13 +487,14 @@ void PrimaryRouter::startv2() //For Stage6 Stage7
                     else //Other go to router 1
                     {
                         new_control_packet->octane_port=this->clientPort[1];
+                        target_client_number=1;
                     }
                     new_control_packet->octane_source_port=ANY_PORT;
                     new_control_packet->octane_dest_port=ANY_PORT;
                 }
                 else if(m_iphdr->protocol==6)
                 {
-                    if(m_tcphdr->dest==80)
+                    if(m_tcphdr->dest==ntohs(80))
                     {
                         new_control_packet->octane_port=this->clientPort[1];
                         target_client_number=1;
@@ -534,7 +539,6 @@ void PrimaryRouter::startv2() //For Stage6 Stage7
                 new_control_packet->octane_protocol=m_iphdr->protocol;
                 m_OctaneManager->Rule_Install(new_control_packet);
             }
-            
             //Add control Msg to secondary router Here
             if(act==1)
             {

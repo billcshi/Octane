@@ -53,6 +53,25 @@ int Router::raw_socket_start(const char *opt)
 
 }
 
+int Router::raw_tcp_socket_start(const char *opt)
+{
+    this->rawTCPSocketNumber=socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
+    if(this->rawTCPSocketNumber<0)
+    {
+        printf("Open RAW_TCP_Socket Error\n");
+        return -1;
+    }
+    const int len=strnlen(opt,IFNAMSIZ);
+    if(setsockopt(this->rawTCPSocketNumber,SOL_SOCKET,SO_BINDTODEVICE,opt,len)<0)
+    {
+        printf("Binding RAW_TCP Error\n");
+        return -1;
+    }
+    printf("Finish RAW_Socket INIT\n");
+    return 0;
+
+}
+
 void Router::tunnel_start(char *tunnelName)
 {
     this->tunnelNumber=tun_alloc(tunnelName, IFF_TUN | IFF_NO_PI); 
@@ -158,6 +177,37 @@ void Router::raw_icmp_send(char *buffer,int length,void* v_iphdr)
     msgsent.msg_flags=0;
 
     int n=sendmsg(this->rawSocketNumber,&msgsent,0);
+    if(n<0)
+    {
+        printf("SendMsgError\n");
+    }
+    return;
+}
+
+void Router::raw_tcp_send(char * buffer, int length, void *v_iphdr,void *v_tcphdr)
+{
+    struct msghdr msgsent;
+    struct sockaddr_in dst_addr;
+    struct iovec iov;
+    struct iphdr * m_iphdr=(struct iphdr * )v_iphdr;
+    struct tcphdr * m_tcphdr=(struct tcphdr*) v_tcphdr;
+    dst_addr.sin_family=AF_INET;
+    dst_addr.sin_addr.s_addr=m_iphdr->daddr;
+    dst_addr.sin_port=htons(80);
+    msgsent.msg_name=&dst_addr;
+    msgsent.msg_namelen=sizeof(dst_addr);
+
+    iov.iov_base=buffer;
+    iov.iov_len=length;
+    msgsent.msg_iov=&iov;
+    msgsent.msg_iovlen=1;
+
+    msgsent.msg_control=NULL;
+    msgsent.msg_controllen=0;
+
+    msgsent.msg_flags=0;
+
+    int n=sendmsg(this->rawTCPSocketNumber,&msgsent,0);
     if(n<0)
     {
         printf("SendMsgError\n");

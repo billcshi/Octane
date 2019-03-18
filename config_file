@@ -1,7 +1,7 @@
 #This is a comment line, should be ignored
-stage 5
+stage 6
 #Other comment
 #Clar
 #in a 
-num_routers 1
+num_routers 2
 drop_after 10
