@@ -94,6 +94,7 @@ void PrimaryRouter::start(int clientport)
                 if(m_control_msg->octane_flags==0) continue;
                 handle h=seqno_to_handle[m_control_msg->octane_seqno];
                 m_timerManager->RemoveTimer(h);
+                continue;
             }
             else if(m_iphdr->protocol==1)
             {
@@ -211,7 +212,7 @@ void PrimaryRouter::start(int clientport)
                     m_seqno++;
                     new_control_packet->octane_source_ip=m_iphdr->daddr;
                     new_control_packet->octane_source_port=ANY_PORT;
-                    new_control_packet->octane_dest_ip=m_iphdr->saddr;
+                    new_control_packet->octane_dest_ip=ANY_IP;//m_iphdr->saddr;
                     new_control_packet->octane_dest_port=ANY_PORT;
                     new_control_packet->octane_protocol=m_iphdr->protocol;
                     ReliableTransTimer *new_timer=new ReliableTransTimer(this,new_control_packet->octane_seqno,clientport,newbuf,20+sizeof(octane_control));

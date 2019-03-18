@@ -84,7 +84,8 @@ void SecondaryRouter::start(int serverport)
             sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
             fromIPto4int(ntohl(m_iphdr->daddr),a,b,c,d);
             sprintf(s_dst,"%d.%d.%d.%d",a,b,c,d);
-            sprintf(newbuf,"ICMP from port: %d, src: %s, dst: %s, type: %d\n",serverport, s_src,s_dst,m_icmphdr->type);
+            if(from ==0) sprintf(newbuf,"ICMP from port: %d, src: %s, dst: %s, type: %d\n",serverport, s_src,s_dst,m_icmphdr->type);
+            else sprintf(newbuf,"ICMP from raw sock, src: %s, dst: %s, type: %d\n", s_src,s_dst,m_icmphdr->type);
             this->write_to_log(newbuf);
             printf("%s",newbuf);
         }
@@ -131,7 +132,7 @@ void SecondaryRouter::start(int serverport)
                     struct icmphdr * m_send_icmphdr=(struct icmphdr*) (send_data+(m_iphdr->ihl)*4);
                     m_send_iphdr->daddr=ICMP_ID_SEQ_TO_IP[std::make_pair(m_send_icmphdr->un.echo.id,m_send_icmphdr->un.echo.sequence)];
                     m_send_iphdr->check=0;
-                    m_send_iphdr->check=checksum((char *)m_send_icmphdr,m_send_iphdr->ihl*4);
+                    m_send_iphdr->check=checksum((char *)m_send_iphdr,m_send_iphdr->ihl*4);
                 }
                 udp_msg_send_port(send_data,output_port,length);
                 
