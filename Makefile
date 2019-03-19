@@ -1,6 +1,6 @@
-all: proja
-proja: proja.o task_config.o ./Stage1/stage1main.o ./Stage2/stage2main.o ./Stage3/stage3main.o ./Stage4/stage4main.o ./Stage5/stage5main.o ./Stage6/stage6main.o ./Stage7/stage7main.o ./timers/tools.o ./timers/timers.o ./Router/OctaneManager.o ./Router/router.o ./Router/PrimaryRouter.o ./Router/SecondaryRouter.o ./GlobalVar.o ./Router/sample_tunnel.o ./Datagram/IPDatagram.o ./Datagram/icmp_checksum.o
-	g++ -g ./task_config.o ./proja.o ./Stage1/stage1main.o ./Stage2/stage2main.o ./Stage3/stage3main.o ./Stage4/stage4main.o ./Stage5/stage5main.o ./Stage6/stage6main.o ./Stage7/stage7main.o ./timers/tools.o ./timers/timers.o ./Router/OctaneManager.o ./Router/router.o ./Router/PrimaryRouter.o ./Router/SecondaryRouter.o ./Router/sample_tunnel.o ./GlobalVar.o ./Datagram/IPDatagram.o ./Datagram/icmp_checksum.o -o ./proja
+all: projb
+projb: proja.o task_config.o ./Stage1/stage1main.o ./Stage2/stage2main.o ./Stage3/stage3main.o ./Stage4/stage4main.o ./Stage5/stage5main.o ./Stage6/stage6main.o ./Stage7/stage7main.o ./timers/tools.o ./timers/timers.o ./Router/OctaneManager.o ./Router/router.o ./Router/PrimaryRouter.o ./Router/SecondaryRouter.o ./GlobalVar.o ./Router/sample_tunnel.o ./Datagram/IPDatagram.o ./Datagram/icmp_checksum.o
+	g++ -g ./task_config.o ./proja.o ./Stage1/stage1main.o ./Stage2/stage2main.o ./Stage3/stage3main.o ./Stage4/stage4main.o ./Stage5/stage5main.o ./Stage6/stage6main.o ./Stage7/stage7main.o ./timers/tools.o ./timers/timers.o ./Router/OctaneManager.o ./Router/router.o ./Router/PrimaryRouter.o ./Router/SecondaryRouter.o ./Router/sample_tunnel.o ./GlobalVar.o ./Datagram/IPDatagram.o ./Datagram/icmp_checksum.o -o ./projb
 proja.o: proja.cpp
 	g++ -g -c ./proja.cpp -o ./proja.o
 task_config.o: task_config.cpp
@@ -51,7 +51,7 @@ clean:
 	rm -r ./Stage7/*.o
 	rm -r ./Datagram/*.o
 	rm -r ./timers/*.o
-	rm -r ./proja
+	rm -r ./projb
 	rm -r ./*.out
 stage1clean:
 	rm -r ./Stage1/*.o
