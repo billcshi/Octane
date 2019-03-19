@@ -39,7 +39,7 @@ public:
         m_OctaneManager->set_m_Router(this);
     };
     void start(int);
-    void startv2();
+    void startv2(int);
     int clientPort[5]={};
 private:
     Timers *m_timerManager;

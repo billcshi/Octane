@@ -293,7 +293,7 @@ void PrimaryRouter::start(int clientport) //For Stage4 Stage5
     }
 }
 
-void PrimaryRouter::startv2() //For Stage6 Stage7
+void PrimaryRouter::startv2(int Stage) //For Stage6 Stage7
 {
     TimerCallback * tcb;
     struct timeval tv;
@@ -304,6 +304,94 @@ void PrimaryRouter::startv2() //For Stage6 Stage7
     m_timerManager=new Timers;
     tcb=new IdleTimeMonitor(this);
     m_timerManager->AddTimer(15000,tcb); //IF Idle more than 15 s than stop the router
+    if(Stage==7)
+    {
+        char buf[MAX_LENGTH];
+        struct iphdr* m_iphdr=(struct iphdr*)&buf[0];
+        struct octane_control *m_octane_control=(struct octane_control *)&buf[20];
+        m_octane_control->octane_action=1;  //To primarity router: (ANY,ANY,ANY,443,6) action 1 port secondary router 1
+        m_octane_control->octane_flags=0;
+        m_octane_control->octane_port=this->clientPort[1];
+        m_octane_control->octane_seqno=m_seqno;
+        m_seqno++;
+        m_octane_control->octane_source_ip=ANY_IP;
+        m_octane_control->octane_source_port=ANY_PORT;
+        m_octane_control->octane_dest_ip=ANY_IP;
+        m_octane_control->octane_dest_port=ntohs(443);
+        m_octane_control->octane_protocol=6;
+        m_OctaneManager->Rule_Install(m_octane_control);
+        m_octane_control->octane_action=1;  //To primary router: (ANY,443,ANY,ANY,6) action 1 port 0
+        m_octane_control->octane_flags=0;
+        m_octane_control->octane_port=0;
+        m_octane_control->octane_seqno=m_seqno;
+        m_seqno++;
+        m_octane_control->octane_source_ip=ANY_IP;
+        m_octane_control->octane_source_port=ntohs(443);
+        m_octane_control->octane_dest_ip=ANY_IP;
+        m_octane_control->octane_dest_port=ANY_PORT;
+        m_octane_control->octane_protocol=6;
+        m_OctaneManager->Rule_Install(m_octane_control);
+        {m_iphdr->protocol=253;              //To secondary router 1: (ANY, ANY,ANY,443,6) action 1 port secondary router 2
+        m_octane_control->octane_action=1;
+        m_octane_control->octane_flags=0;
+        m_octane_control->octane_port=this->clientPort[2];
+        m_octane_control->octane_seqno=m_seqno;
+        m_seqno++;
+        m_octane_control->octane_source_ip=ANY_IP;
+        m_octane_control->octane_source_port=ANY_PORT;
+        m_octane_control->octane_dest_ip=ANY_IP;
+        m_octane_control->octane_dest_port=ntohs(443);
+        m_octane_control->octane_protocol=6;
+        ReliableTransTimer *new_timer=new ReliableTransTimer(this,m_octane_control->octane_seqno,this->clientPort[1],buf,20+sizeof(octane_control));
+        handle h=m_timerManager->AddTimer(2000,new_timer);
+        seqno_to_handle[m_octane_control->octane_seqno]=h;
+        this->udp_msg_send_port((char*) buf,this->clientPort[1],20+sizeof(octane_control));}
+        {m_iphdr->protocol=253;              //To secondary router 1: (ANY, 443,ANY,ANY,6) action 1 port primary router
+        m_octane_control->octane_action=1;
+        m_octane_control->octane_flags=0;
+        m_octane_control->octane_port=this->portNumber;
+        m_octane_control->octane_seqno=m_seqno;
+        m_seqno++;
+        m_octane_control->octane_source_ip=ANY_IP;
+        m_octane_control->octane_source_port=ntohs(443);
+        m_octane_control->octane_dest_ip=ANY_IP;
+        m_octane_control->octane_dest_port=ANY_PORT;
+        m_octane_control->octane_protocol=6;
+        ReliableTransTimer *new_timer=new ReliableTransTimer(this,m_octane_control->octane_seqno,this->clientPort[1],buf,20+sizeof(octane_control));
+        handle h=m_timerManager->AddTimer(2000,new_timer);
+        seqno_to_handle[m_octane_control->octane_seqno]=h;
+        this->udp_msg_send_port((char*) buf,this->clientPort[1],20+sizeof(octane_control));}
+        {m_iphdr->protocol=253;              //To secondary router 2: (ANY, ANY,ANY,443,6) action 1 port 0
+        m_octane_control->octane_action=1;
+        m_octane_control->octane_flags=0;
+        m_octane_control->octane_port=0;
+        m_octane_control->octane_seqno=m_seqno;
+        m_seqno++;
+        m_octane_control->octane_source_ip=ANY_IP;
+        m_octane_control->octane_source_port=ANY_PORT;
+        m_octane_control->octane_dest_ip=ANY_IP;
+        m_octane_control->octane_dest_port=ntohs(443);
+        m_octane_control->octane_protocol=6;
+        ReliableTransTimer *new_timer=new ReliableTransTimer(this,m_octane_control->octane_seqno,this->clientPort[2],buf,20+sizeof(octane_control));
+        handle h=m_timerManager->AddTimer(2000,new_timer);
+        seqno_to_handle[m_octane_control->octane_seqno]=h;
+        this->udp_msg_send_port((char*) buf,this->clientPort[2],20+sizeof(octane_control));}
+        {m_iphdr->protocol=253;              //To secondary router 2: (ANY, 443,ANY,ANY,6) action 1 port secondary router 1
+        m_octane_control->octane_action=1;
+        m_octane_control->octane_flags=0;
+        m_octane_control->octane_port=this->clientPort[1];
+        m_octane_control->octane_seqno=m_seqno;
+        m_seqno++;
+        m_octane_control->octane_source_ip=ANY_IP;
+        m_octane_control->octane_source_port=ntohs(443);
+        m_octane_control->octane_dest_ip=ANY_IP;
+        m_octane_control->octane_dest_port=ANY_PORT;
+        m_octane_control->octane_protocol=6;
+        ReliableTransTimer *new_timer=new ReliableTransTimer(this,m_octane_control->octane_seqno,this->clientPort[2],buf,20+sizeof(octane_control));
+        handle h=m_timerManager->AddTimer(2000,new_timer);
+        seqno_to_handle[m_octane_control->octane_seqno]=h;
+        this->udp_msg_send_port((char*) buf,this->clientPort[2],20+sizeof(octane_control));}
+    }
     while(1)
     {
         int act=1;

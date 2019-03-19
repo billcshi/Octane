@@ -4,7 +4,7 @@
 #include <netinet/ip.h> //For IPhdr
 #include <netinet/ip_icmp.h> //For ICMPhdr
 
-#include "stage6main.h"
+#include "stage7main.h"
 #include "../Router/Router.h"
 #include "../Router/PrimaryRouter.h"
 #include "../Router/SecondaryRouter.h"
@@ -13,9 +13,9 @@
 #include "../Datagram/icmp_checksum.h"
 #include "../timers/timers.hh"
 
-void primaryRouterMainS6(int number, PrimaryRouter *primary_router)
+void primaryRouterMainS7(int number, PrimaryRouter *primary_router)
 {
-    primary_router->open_log("stage6.r0.out");
+    primary_router->open_log("stage7.r0.out");
     char buf[1500];
     sprintf(buf,"primary port: %d\n",primary_router_port);
     primary_router->write_to_log(buf);
@@ -33,7 +33,7 @@ void primaryRouterMainS6(int number, PrimaryRouter *primary_router)
     char TunnelName[16]="tun1";
     primary_router->tunnel_start(TunnelName);
     //primary_router->start(clientport);
-    primary_router->startv2(6);
+    primary_router->startv2(7);
     printf("Sever Close\n");
 
     primary_router->close_router();
@@ -41,11 +41,11 @@ void primaryRouterMainS6(int number, PrimaryRouter *primary_router)
     primary_router->close_log();
 }
 
-void secondaryRouterMainS6(int number, int pid, int drop_after)
+void secondaryRouterMainS7(int number, int pid, int drop_after)
 {
     SecondaryRouter my_router(number);
     char buf[1500],newbuf[1500];
-    sprintf(buf,"stage6.r%d.out",number);
+    sprintf(buf,"stage7.r%d.out",number);
     my_router.open_log(buf);
     int my_port=my_router.getPort();
     sprintf(buf,"router: %d, pid: %d,port: %d\n",number,pid,my_port);
@@ -65,7 +65,7 @@ void secondaryRouterMainS6(int number, int pid, int drop_after)
     my_router.close_log();
 }
 
-int stage6main(task_config *taskConfig)
+int stage7main(task_config *taskConfig)
 {
     int now_pid,my_number;
     PrimaryRouter primary_router(0);
@@ -91,11 +91,11 @@ int stage6main(task_config *taskConfig)
 
     if(now_pid==primary_pid)
     {
-        primaryRouterMainS6(taskConfig->num_routers,&primary_router);
+        primaryRouterMainS7(taskConfig->num_routers,&primary_router);
     }
     else
     {
-        secondaryRouterMainS6(my_number,now_pid,taskConfig->drop_after);
+        secondaryRouterMainS7(my_number,now_pid,taskConfig->drop_after);
     }
 
     return 0;

@@ -211,23 +211,27 @@ void SecondaryRouter::start(int serverport)
                 }
                 else if(m_send_iphdr->protocol==6)
                 {
-                    struct tcphdr * m_send_tcphdr=(struct tcphdr*) (send_data+(m_iphdr->ihl)*4);
-                    char new_data_buf[MAX_LENGTH];
-                    for(int i=(m_iphdr->ihl)*4;i<length;i++) new_data_buf[i-(m_iphdr->ihl)*4+12]=buf[i];
-                    struct psdtcphdr * m_psdtcphdr=(struct psdtcphdr*) &new_data_buf[0];
-                    struct tcphdr * m_new_data_tcphdr=(struct tcphdr*) &new_data_buf[12];
-                    m_psdtcphdr->saddr=m_iphdr->saddr;
-                    m_psdtcphdr->daddr=ICMP_ID_SEQ_TO_IP[std::make_pair(m_send_tcphdr->dest,m_send_tcphdr->source)];
-                    m_psdtcphdr->protocol=m_iphdr->protocol;
-                    m_psdtcphdr->zero=0;
-                    m_psdtcphdr->tcpl=ntohs(length-(m_iphdr->ihl)*4);
-                    m_new_data_tcphdr->check=0;
-                    m_new_data_tcphdr->check=checksum(new_data_buf,length-(m_iphdr->ihl)*4+12);
-                    m_send_tcphdr->check=m_new_data_tcphdr->check;
+                    if(from==1) //from raw socket
+                    {
+                        struct tcphdr * m_send_tcphdr=(struct tcphdr*) (send_data+(m_iphdr->ihl)*4);
+                        char new_data_buf[MAX_LENGTH];
+                        for(int i=(m_iphdr->ihl)*4;i<length;i++) new_data_buf[i-(m_iphdr->ihl)*4+12]=buf[i];
+                        struct psdtcphdr * m_psdtcphdr=(struct psdtcphdr*) &new_data_buf[0];
+                        struct tcphdr * m_new_data_tcphdr=(struct tcphdr*) &new_data_buf[12];
+                        m_psdtcphdr->saddr=m_iphdr->saddr;
+                        m_psdtcphdr->daddr=ICMP_ID_SEQ_TO_IP[std::make_pair(m_send_tcphdr->dest,m_send_tcphdr->source)];
+                        m_psdtcphdr->protocol=m_iphdr->protocol;
+                        m_psdtcphdr->zero=0;
+                        m_psdtcphdr->tcpl=ntohs(length-(m_iphdr->ihl)*4);
+                        m_new_data_tcphdr->check=0;
+                        m_new_data_tcphdr->check=checksum(new_data_buf,length-(m_iphdr->ihl)*4+12);
+                        m_send_tcphdr->check=m_new_data_tcphdr->check;
                     
-                    m_send_iphdr->daddr=ICMP_ID_SEQ_TO_IP[std::make_pair(m_send_tcphdr->dest,m_send_tcphdr->source)];
-                    m_send_iphdr->check=0;
-                    m_send_iphdr->check=checksum((char *)m_send_iphdr,m_send_iphdr->ihl*4);
+                        m_send_iphdr->daddr=ICMP_ID_SEQ_TO_IP[std::make_pair(m_send_tcphdr->dest,m_send_tcphdr->source)];
+                        m_send_iphdr->check=0;
+                        m_send_iphdr->check=checksum((char *)m_send_iphdr,m_send_iphdr->ihl*4);
+                    }                    
+                    
                 }
                 udp_msg_send_port(send_data,output_port,length);
                 

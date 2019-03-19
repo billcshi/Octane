@@ -46,7 +46,7 @@ uint8_t OctaneManager::Rule_Check(iphdr* my_iphdr,uint16_t &port)
             {
                 if(my_iphdr->protocol==i->PROTOCOL)
                 {
-                    if(my_iphdr->protocol==1 || true)
+                    if(my_iphdr->protocol==1)
                     {//ICMP without port
                         char s_src[20],s_dst[20];
                         char newbuf[1500];
@@ -62,6 +62,33 @@ uint8_t OctaneManager::Rule_Check(iphdr* my_iphdr,uint16_t &port)
                         printf("%s",newbuf);
                         port=i->PORT;
                         return i->ACTION;
+                    }
+                    else if(my_iphdr->protocol==6)
+                    {//TCP need to check port
+                        char *p_c_iphdr=(char *)my_iphdr;
+                        char *p_c_tcphdr=(char *)my_iphdr+20;
+                        struct tcphdr* m_tcphdr=(struct tcphdr*)p_c_tcphdr;
+                        if(m_tcphdr->source==i->SPORT || (i->SPORT==ANY_PORT && m_tcphdr->source !=ntohs(443)))
+                        {
+                            if(m_tcphdr->dest==i->DPORT || (i->DPORT==ANY_PORT && m_tcphdr->dest != ntohs(443)))
+                            {
+                                char s_src[20],s_dst[20];
+                                char newbuf[1500];
+                                unsigned int a,b,c,d;
+                                fromIPto4int(ntohl(i->SIP),a,b,c,d);
+                                sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
+                                fromIPto4int(ntohl(i->DIP),a,b,c,d);
+                                sprintf(s_dst,"%d.%d.%d.%d",a,b,c,d);
+                                uint16_t source_port=htons(i->SPORT);
+                                uint16_t dest_port=htons(i->DPORT);
+                                sprintf(newbuf,"router: %d, rule hit (%s, %d, %s, %d, %d) action %d port %d\n",this->m_Router->getRouterNumber(),s_src,source_port,s_dst,dest_port,i->PROTOCOL,i->ACTION,i->PORT);
+                                this->m_Router->write_to_log(newbuf);
+                                printf("%s",newbuf);
+                                port=i->PORT;
+                                return i->ACTION;
+                            }
+                        }
+
                     }
                 }
             }
