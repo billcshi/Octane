@@ -1,6 +1,7 @@
 #ifndef IPDATAGRAM
 #define IPDATAGRAM
 #include "ICMPDatagram.h"
+#include <stdint.h>
 
 class IPDatagram
 {
@@ -38,6 +39,14 @@ public:
         dst[2]=inputBuf[18];
         dst[3]=inputBuf[19];
     }
+};
+
+struct psdtcphdr{
+    uint32_t saddr;
+    uint32_t daddr;
+    uint8_t zero;
+    uint8_t protocol;
+    uint16_t tcpl;
 };
 
 void fromIPto4int(unsigned int IP,unsigned int &a,unsigned int &b,unsigned int &c,unsigned int &d);

@@ -193,7 +193,7 @@ void Router::raw_tcp_send(char * buffer, int length, void *v_iphdr,void *v_tcphd
     struct tcphdr * m_tcphdr=(struct tcphdr*) v_tcphdr;
     dst_addr.sin_family=AF_INET;
     dst_addr.sin_addr.s_addr=m_iphdr->daddr;
-    dst_addr.sin_port=htons(80);
+    dst_addr.sin_port=htons(0);
     msgsent.msg_name=&dst_addr;
     msgsent.msg_namelen=sizeof(dst_addr);
 

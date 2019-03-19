@@ -8,6 +8,35 @@
 #define max(a,b) ((a)>(b)?(a):(b))
 #define MAX_LENGTH 1024
 
+void SecondaryRouter::get_my_ip()
+{
+    printf("Try to get my_ip\n");
+    char send_buf[1024];
+    struct icmphdr* m_icmphdr=(struct icmphdr*)&send_buf[0];
+    char ip_buf[1024];
+    struct iphdr * m_iphdr=(struct iphdr *)&ip_buf[0];
+    m_iphdr->daddr=0x08080808;
+    m_icmphdr->type=8;
+    m_icmphdr->checksum=0;
+    m_icmphdr->code=0;
+    m_icmphdr->un.echo.id=0;
+    m_icmphdr->un.echo.sequence=0;
+    int length=20;
+    m_icmphdr->checksum=checksum(send_buf,length);
+    raw_icmp_send(send_buf,length,m_iphdr);
+    char buf[1024];
+    length=recv(this->rawSocketNumber,buf,MAX_LENGTH,0);
+    m_iphdr=(struct iphdr *)&buf[0];
+    my_ip=m_iphdr->daddr;
+    char s_src[20];
+    char newbuf[1024];
+    unsigned int a,b,c,d;
+    fromIPto4int(ntohl(my_ip),a,b,c,d);
+    sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
+    printf("router:%d, My_IP is:%s\n",this->routerNumber,s_src);
+    return;
+}
+
 void SecondaryRouter::start(int serverport)
 {
     TimerCallback * tcb;
@@ -19,6 +48,7 @@ void SecondaryRouter::start(int serverport)
     m_timerManager=new Timers;
     tcb=new IdleTimeMonitor(this);
     m_timerManager->AddTimer(15000,tcb); //IF Idle more than 15 s than stop the router
+    get_my_ip();
     while(1)
     {
         m_timerManager->NextTimerTime(&tv);
@@ -102,8 +132,10 @@ void SecondaryRouter::start(int serverport)
                 sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
                 fromIPto4int(ntohl(m_iphdr->daddr),a,b,c,d);
                 sprintf(s_dst,"%d.%d.%d.%d",a,b,c,d);
-                if(from==0) sprintf(newbuf,"TCP from port: %d, (%s, %d, %s, %d)\n",portNum, s_src,m_tcphdr->source,s_dst,m_tcphdr->dest);
-                else sprintf(newbuf,"TCP from raw sock, (%s, %d, %s, %d)\n",s_src,m_tcphdr->source,s_dst,m_tcphdr->dest);
+                uint16_t source_port=htons(m_tcphdr->source);
+                uint16_t dest_port=htons(m_tcphdr->dest);
+                if(from==0) sprintf(newbuf,"TCP from port: %d, (%s, %d, %s, %d)\n",portNum, s_src,source_port,s_dst,dest_port);
+                else sprintf(newbuf,"TCP from raw sock, (%s, %d, %s, %d)\n",s_src,source_port,s_dst,dest_port);
                 this->write_to_log(newbuf);
                 printf("%s",newbuf);
             }
@@ -136,10 +168,23 @@ void SecondaryRouter::start(int serverport)
                 }
                 else if(m_iphdr->protocol==6)
                 {
-                    for(int i=(m_iphdr->ihl)*4;i<length;i++) send_data[i-(m_iphdr->ihl)*4]=buf[i];
-                    struct tcphdr * m_tcphdr=(struct tcphdr*) &send_data[0];
+                    for(int i=(m_iphdr->ihl)*4;i<length;i++) send_data[i-(m_iphdr->ihl)*4+12]=buf[i];
+                    struct psdtcphdr * m_psdtcphdr=(struct psdtcphdr*) &send_data[0];
+                    m_psdtcphdr->saddr=this->my_ip;
+                    m_psdtcphdr->daddr=m_iphdr->daddr;
+                    m_psdtcphdr->protocol=m_iphdr->protocol;
+                    m_psdtcphdr->zero=0;
+                    m_psdtcphdr->tcpl=ntohs(length-(m_iphdr->ihl)*4);
+                    struct tcphdr * m_tcphdr=(struct tcphdr*) &send_data[12];
+                    //rintf("AAAAA\n");
+                    //printf("%d %d %d \n",m_tcphdr->source,m_tcphdr->dest,m_iphdr->saddr);
                     ICMP_ID_SEQ_TO_IP[std::make_pair(m_tcphdr->source,m_tcphdr->dest)]=m_iphdr->saddr;
-                    this->raw_tcp_send(send_data,length-(m_iphdr->ihl)*4,m_iphdr,m_tcphdr);
+                    //printf("BBBBB\n");
+                    m_tcphdr->check=0;
+                    //printf("CCCCC\n");
+                    m_tcphdr->check=checksum((char *)m_psdtcphdr,length-(m_iphdr->ihl)*4+12);
+                    //printf("DDDDD\n");
+                    this->raw_tcp_send(&send_data[12],length-(m_iphdr->ihl)*4,m_iphdr,m_tcphdr);
                 }
                 else
                 {//Other Protocol

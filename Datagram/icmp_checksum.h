@@ -3,4 +3,6 @@
 
 unsigned short checksum(char *addr, short count);
 
+//unsigned short tcpchecksum(char * addr,short count);
+
 #endif
