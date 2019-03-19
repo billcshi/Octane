@@ -81,7 +81,7 @@ uint8_t OctaneManager::Rule_Check(iphdr* my_iphdr,uint16_t &port)
                                 sprintf(s_dst,"%d.%d.%d.%d",a,b,c,d);
                                 uint16_t source_port=htons(i->SPORT);
                                 uint16_t dest_port=htons(i->DPORT);
-                                sprintf(newbuf,"router: %d, rule hit (%s, %d, %s, %d, %d) action %d port %d\n",this->m_Router->getRouterNumber(),s_src,source_port,s_dst,dest_port,i->PROTOCOL,i->ACTION,i->PORT);
+                                sprintf(newbuf,"router: %d, rule hit (%s, %d, %s, %d, %d)\n",this->m_Router->getRouterNumber(),s_src,source_port,s_dst,dest_port,i->PROTOCOL);
                                 this->m_Router->write_to_log(newbuf);
                                 printf("%s",newbuf);
                                 port=i->PORT;
