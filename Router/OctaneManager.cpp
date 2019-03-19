@@ -23,7 +23,7 @@ void OctaneManager::Rule_Install(octane_control* my_octane_hdr)
     unsigned int a,b,c,d;
     unsigned int src_port=new_Rule.SPORT;
     unsigned int dst_port=new_Rule.DPORT;
-    char newbuf[1024];
+    char newbuf[1500];
     fromIPto4int(ntohl(new_Rule.SIP),a,b,c,d);
     sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
     fromIPto4int(ntohl(new_Rule.DIP),a,b,c,d);
@@ -49,7 +49,7 @@ uint8_t OctaneManager::Rule_Check(iphdr* my_iphdr,uint16_t &port)
                     if(my_iphdr->protocol==1 || true)
                     {//ICMP without port
                         char s_src[20],s_dst[20];
-                        char newbuf[1024];
+                        char newbuf[1500];
                         unsigned int a,b,c,d;
                         fromIPto4int(ntohl(i->SIP),a,b,c,d);
                         sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);

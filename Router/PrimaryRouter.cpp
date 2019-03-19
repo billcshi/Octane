@@ -5,7 +5,7 @@
 #include "../Datagram/icmp_checksum.h"
 
 #define max(a,b) ((a)>(b)?(a):(b))
-#define MAX_LENGTH 1024
+#define MAX_LENGTH 1500
 
 int ReliableTransTimer::Expire()
 {
@@ -29,7 +29,7 @@ void PrimaryRouter::start(int clientport) //For Stage4 Stage5
 {
     TimerCallback * tcb;
     struct timeval tv;
-    char buf[1024];
+    char buf[MAX_LENGTH];
     int length;
     int portNum;
     int from;
@@ -101,7 +101,7 @@ void PrimaryRouter::start(int clientport) //For Stage4 Stage5
                 m_icmphdr=(struct icmphdr*) (buf+(m_iphdr->ihl)*4);
                 char s_src[20],s_dst[20];
                 unsigned int a,b,c,d;
-                char newbuf[1024];
+                char newbuf[MAX_LENGTH];
                 fromIPto4int(ntohl(m_iphdr->saddr),a,b,c,d);
                 sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
                 fromIPto4int(ntohl(m_iphdr->daddr),a,b,c,d);
@@ -121,7 +121,7 @@ void PrimaryRouter::start(int clientport) //For Stage4 Stage5
             m_iphdr=(struct iphdr*) buf;
             m_icmphdr=(struct icmphdr*) (buf+(m_iphdr->ihl)*4);
             char s_src[20],s_dst[20];
-            char newbuf[1024];
+            char newbuf[MAX_LENGTH];
             unsigned int a,b,c,d;
             
             fromIPto4int(ntohl(m_iphdr->saddr),a,b,c,d);
@@ -142,7 +142,7 @@ void PrimaryRouter::start(int clientport) //For Stage4 Stage5
         if(my_action==NONACTION)
         {
             //Add control Msg to own table
-            char newbuf[1024];
+            char newbuf[MAX_LENGTH];
             {
                 octane_control* new_control_packet=(octane_control *)&newbuf[0];
                 //From tun1 to secondary router
@@ -257,7 +257,7 @@ void PrimaryRouter::start(int clientport) //For Stage4 Stage5
         }
         if(my_action==1)
         {//Forward
-            char newbuf[1024];
+            char newbuf[MAX_LENGTH];
             for(int i=0;i<length;i++)
             {
                 newbuf[i]=buf[i];
@@ -297,7 +297,7 @@ void PrimaryRouter::startv2() //For Stage6 Stage7
 {
     TimerCallback * tcb;
     struct timeval tv;
-    char buf[1024];
+    char buf[MAX_LENGTH];
     int length;
     int portNum;
     int from;
@@ -370,7 +370,7 @@ void PrimaryRouter::startv2() //For Stage6 Stage7
                 m_icmphdr=(struct icmphdr*) (buf+(m_iphdr->ihl)*4);
                 char s_src[20],s_dst[20];
                 unsigned int a,b,c,d;
-                char newbuf[1024];
+                char newbuf[MAX_LENGTH];
                 fromIPto4int(ntohl(m_iphdr->saddr),a,b,c,d);
                 sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
                 fromIPto4int(ntohl(m_iphdr->daddr),a,b,c,d);
@@ -384,7 +384,7 @@ void PrimaryRouter::startv2() //For Stage6 Stage7
                 m_tcphdr=(struct tcphdr*) (buf+(m_iphdr->ihl)*4);
                 char s_src[20],s_dst[20];
                 unsigned int a,b,c,d;
-                char newbuf[1024];
+                char newbuf[MAX_LENGTH];
                 fromIPto4int(ntohl(m_iphdr->saddr),a,b,c,d);
                 sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
                 fromIPto4int(ntohl(m_iphdr->daddr),a,b,c,d);
@@ -408,7 +408,7 @@ void PrimaryRouter::startv2() //For Stage6 Stage7
             {
                 m_icmphdr=(struct icmphdr*) (buf+(m_iphdr->ihl)*4);
                 char s_src[20],s_dst[20];
-                char newbuf[1024];
+                char newbuf[MAX_LENGTH];
                 unsigned int a,b,c,d;
             
                 fromIPto4int(ntohl(m_iphdr->saddr),a,b,c,d);
@@ -427,7 +427,7 @@ void PrimaryRouter::startv2() //For Stage6 Stage7
             {
                 m_tcphdr=(struct tcphdr*) (buf+(m_iphdr->ihl)*4);
                 char s_src[20],s_dst[20];
-                char newbuf[1024];
+                char newbuf[MAX_LENGTH];
                 unsigned int a,b,c,d;
             
                 fromIPto4int(ntohl(m_iphdr->saddr),a,b,c,d);
@@ -449,7 +449,7 @@ void PrimaryRouter::startv2() //For Stage6 Stage7
         {
             //Add control Msg to own table
             int target_client_number;
-            char newbuf[1024];
+            char newbuf[MAX_LENGTH];
             {
                 octane_control* new_control_packet=(octane_control *)&newbuf[0];
                 //From tun1 to secondary router
@@ -563,9 +563,17 @@ void PrimaryRouter::startv2() //For Stage6 Stage7
                     new_control_packet->octane_seqno=m_seqno;
                     m_seqno++;
                     new_control_packet->octane_source_ip=m_iphdr->saddr;
-                    new_control_packet->octane_source_port=ANY_PORT;
+                    if(m_iphdr->protocol==1) 
+                    {
+                        new_control_packet->octane_source_port=ANY_PORT;
+                        new_control_packet->octane_dest_port=ANY_PORT;
+                    }
+                    else if(m_iphdr->protocol==6)
+                    {
+                        new_control_packet->octane_source_port=m_tcphdr->source;
+                        new_control_packet->octane_dest_port=m_tcphdr->dest;
+                    }
                     new_control_packet->octane_dest_ip=m_iphdr->daddr;
-                    new_control_packet->octane_dest_port=ANY_PORT;
                     new_control_packet->octane_protocol=m_iphdr->protocol;
                     ReliableTransTimer *new_timer=new ReliableTransTimer(this,new_control_packet->octane_seqno,this->clientPort[target_client_number],newbuf,20+sizeof(octane_control));
                     handle h=m_timerManager->AddTimer(2000,new_timer);
@@ -579,9 +587,17 @@ void PrimaryRouter::startv2() //For Stage6 Stage7
                     new_control_packet->octane_seqno=m_seqno;
                     m_seqno++;
                     new_control_packet->octane_source_ip=m_iphdr->daddr;
-                    new_control_packet->octane_source_port=ANY_PORT;
+                    if(m_iphdr->protocol==1) 
+                    {
+                        new_control_packet->octane_source_port=ANY_PORT;
+                        new_control_packet->octane_dest_port=ANY_PORT;
+                    }
+                    else if(m_iphdr->protocol==6)
+                    {
+                        new_control_packet->octane_source_port=m_tcphdr->dest;
+                        new_control_packet->octane_dest_port=m_tcphdr->source;
+                    }
                     new_control_packet->octane_dest_ip=ANY_IP;//m_iphdr->saddr;
-                    new_control_packet->octane_dest_port=ANY_PORT;
                     new_control_packet->octane_protocol=m_iphdr->protocol;
                     ReliableTransTimer *new_timer=new ReliableTransTimer(this,new_control_packet->octane_seqno,this->clientPort[target_client_number],newbuf,20+sizeof(octane_control));
                     handle h=m_timerManager->AddTimer(2000,new_timer);
@@ -625,7 +641,7 @@ void PrimaryRouter::startv2() //For Stage6 Stage7
         }
         if(my_action==1)
         {//Forward
-            char newbuf[1024];
+            char newbuf[MAX_LENGTH];
             for(int i=0;i<length;i++)
             {
                 newbuf[i]=buf[i];

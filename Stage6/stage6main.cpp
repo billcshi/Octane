@@ -16,7 +16,7 @@
 void primaryRouterMainS6(int number, PrimaryRouter *primary_router)
 {
     primary_router->open_log("stage6.r0.out");
-    char buf[1024];
+    char buf[1500];
     sprintf(buf,"primary port: %d\n",primary_router_port);
     primary_router->write_to_log(buf);
     for(int i=0;i<number;i++)
@@ -24,7 +24,7 @@ void primaryRouterMainS6(int number, PrimaryRouter *primary_router)
         int routernumber,clientport,routerpid;
         primary_router->udp_wait_for_msg(buf,clientport);
         sscanf(buf,"%d%d",&routernumber,&routerpid);
-        char newbuf[1024];
+        char newbuf[1500];
         sprintf(newbuf,"router: %d, pid: %d, port:%d\n",routernumber,routerpid,clientport);
         primary_router->write_to_log(newbuf);
         primary_router->clientPort[routernumber]=clientport;
@@ -44,14 +44,14 @@ void primaryRouterMainS6(int number, PrimaryRouter *primary_router)
 void secondaryRouterMainS6(int number, int pid, int drop_after)
 {
     SecondaryRouter my_router(number);
-    char buf[1024],newbuf[1024];
+    char buf[1500],newbuf[1500];
     sprintf(buf,"stage6.r%d.out",number);
     my_router.open_log(buf);
     int my_port=my_router.getPort();
     sprintf(buf,"router: %d, pid: %d,port: %d\n",number,pid,my_port);
     my_router.write_to_log(buf);
     sprintf(buf,"%d %d",number,pid);
-    my_router.udp_msg_send_port(buf,primary_router_port,1024);
+    my_router.udp_msg_send_port(buf,primary_router_port,1500);
     char eth[5];
     sprintf(eth,"eth%d",number);
     my_router.raw_socket_start(eth);

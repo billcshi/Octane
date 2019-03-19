@@ -4,7 +4,7 @@
 #include "Router.h"
 #include "sample_tunnel.h"
 
-#define MAX_LENGTH 1024
+#define MAX_LENGTH 1500
 
 int Router::UDP_start()
 {

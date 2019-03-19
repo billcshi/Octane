@@ -6,14 +6,14 @@
 #include "../Datagram/icmp_checksum.h"
 
 #define max(a,b) ((a)>(b)?(a):(b))
-#define MAX_LENGTH 1024
+#define MAX_LENGTH 1500
 
 void SecondaryRouter::get_my_ip()
 {
     printf("Try to get my_ip\n");
-    char send_buf[1024];
+    char send_buf[MAX_LENGTH];
     struct icmphdr* m_icmphdr=(struct icmphdr*)&send_buf[0];
-    char ip_buf[1024];
+    char ip_buf[MAX_LENGTH];
     struct iphdr * m_iphdr=(struct iphdr *)&ip_buf[0];
     m_iphdr->daddr=0x08080808;
     m_icmphdr->type=8;
@@ -24,12 +24,12 @@ void SecondaryRouter::get_my_ip()
     int length=20;
     m_icmphdr->checksum=checksum(send_buf,length);
     raw_icmp_send(send_buf,length,m_iphdr);
-    char buf[1024];
+    char buf[MAX_LENGTH];
     length=recv(this->rawSocketNumber,buf,MAX_LENGTH,0);
     m_iphdr=(struct iphdr *)&buf[0];
     my_ip=m_iphdr->daddr;
     char s_src[20];
-    char newbuf[1024];
+    char newbuf[MAX_LENGTH];
     unsigned int a,b,c,d;
     fromIPto4int(ntohl(my_ip),a,b,c,d);
     sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
@@ -41,7 +41,7 @@ void SecondaryRouter::start(int serverport)
 {
     TimerCallback * tcb;
     struct timeval tv;
-    char buf[1024];
+    char buf[MAX_LENGTH];
     int length;
     int portNum;
     int from;
@@ -64,7 +64,8 @@ void SecondaryRouter::start(int serverport)
         FD_ZERO(&rset);
         FD_SET(this->rawSocketNumber,&rset);
         FD_SET(this->socketNumber,&rset);
-        int n=select(max(this->socketNumber,this->rawSocketNumber)+1,&rset,NULL,NULL,&tv);
+        FD_SET(this->rawTCPSocketNumber,&rset);
+        int n=select(max(max(this->socketNumber,this->rawSocketNumber),this->rawTCPSocketNumber)+1,&rset,NULL,NULL,&tv);
         if(n<0)
         {
             printf("Error While Select()\n");
@@ -85,6 +86,12 @@ void SecondaryRouter::start(int serverport)
             else if(FD_ISSET(this->rawSocketNumber,&rset))
             {
                 length=recv(this->rawSocketNumber,buf,MAX_LENGTH,0);
+                portNum=0;
+                from=1;
+            }
+            else if(FD_ISSET(this->rawTCPSocketNumber,&rset))
+            {
+                length=recv(this->rawTCPSocketNumber,buf,MAX_LENGTH,0);
                 portNum=0;
                 from=1;
             }
@@ -110,7 +117,7 @@ void SecondaryRouter::start(int serverport)
                 struct icmphdr *m_icmphdr;
                 m_icmphdr=(struct icmphdr*) (buf+(m_iphdr->ihl)*4);
                 char s_src[20],s_dst[20];
-                char newbuf[1024];
+                char newbuf[MAX_LENGTH];
                 unsigned int a,b,c,d;
                 fromIPto4int(ntohl(m_iphdr->saddr),a,b,c,d);
                 sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
@@ -127,7 +134,7 @@ void SecondaryRouter::start(int serverport)
                 m_tcphdr=(struct tcphdr*) (buf+(m_iphdr->ihl)*4);
                 char s_src[20],s_dst[20];
                 unsigned int a,b,c,d;
-                char newbuf[1024];
+                char newbuf[MAX_LENGTH];
                 fromIPto4int(ntohl(m_iphdr->saddr),a,b,c,d);
                 sprintf(s_src,"%d.%d.%d.%d",a,b,c,d);
                 fromIPto4int(ntohl(m_iphdr->daddr),a,b,c,d);
@@ -150,7 +157,7 @@ void SecondaryRouter::start(int serverport)
         {//Forward
             if(output_port==0)
             { //Output Through Raw Socket
-                char send_data[1024];
+                char send_data[MAX_LENGTH];
                 if(m_iphdr->protocol==1)
                 {//ICMP
                     for(int i=(m_iphdr->ihl)*4;i<length;i++) send_data[i-(m_iphdr->ihl)*4]=buf[i];
@@ -189,7 +196,7 @@ void SecondaryRouter::start(int serverport)
             }
             else
             { //Output Through UDP Socket
-                char send_data[1024];
+                char send_data[MAX_LENGTH];
                 for(int i=0;i<=length;i++)
                 {
                     send_data[i]=buf[i];
@@ -205,7 +212,7 @@ void SecondaryRouter::start(int serverport)
                 else if(m_send_iphdr->protocol==6)
                 {
                     struct tcphdr * m_send_tcphdr=(struct tcphdr*) (send_data+(m_iphdr->ihl)*4);
-                    char new_data_buf[1024];
+                    char new_data_buf[MAX_LENGTH];
                     for(int i=(m_iphdr->ihl)*4;i<length;i++) new_data_buf[i-(m_iphdr->ihl)*4+12]=buf[i];
                     struct psdtcphdr * m_psdtcphdr=(struct psdtcphdr*) &new_data_buf[0];
                     struct tcphdr * m_new_data_tcphdr=(struct tcphdr*) &new_data_buf[12];
@@ -215,7 +222,7 @@ void SecondaryRouter::start(int serverport)
                     m_psdtcphdr->zero=0;
                     m_psdtcphdr->tcpl=ntohs(length-(m_iphdr->ihl)*4);
                     m_new_data_tcphdr->check=0;
-                    m_new_data_tcphdr->check=checksum(new_data_buf,m_psdtcphdr->tcpl+12);
+                    m_new_data_tcphdr->check=checksum(new_data_buf,length-(m_iphdr->ihl)*4+12);
                     m_send_tcphdr->check=m_new_data_tcphdr->check;
                     
                     m_send_iphdr->daddr=ICMP_ID_SEQ_TO_IP[std::make_pair(m_send_tcphdr->dest,m_send_tcphdr->source)];
@@ -229,7 +236,7 @@ void SecondaryRouter::start(int serverport)
         }
         else if(my_action==2)
         {//Reply
-            char send_data[1024];
+            char send_data[MAX_LENGTH];
             for(int i=0;i<=length;i++)
             {
                 send_data[i]=buf[i];
