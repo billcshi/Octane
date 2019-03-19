@@ -176,14 +176,9 @@ void SecondaryRouter::start(int serverport)
                     m_psdtcphdr->zero=0;
                     m_psdtcphdr->tcpl=ntohs(length-(m_iphdr->ihl)*4);
                     struct tcphdr * m_tcphdr=(struct tcphdr*) &send_data[12];
-                    //rintf("AAAAA\n");
-                    //printf("%d %d %d \n",m_tcphdr->source,m_tcphdr->dest,m_iphdr->saddr);
                     ICMP_ID_SEQ_TO_IP[std::make_pair(m_tcphdr->source,m_tcphdr->dest)]=m_iphdr->saddr;
-                    //printf("BBBBB\n");
                     m_tcphdr->check=0;
-                    //printf("CCCCC\n");
                     m_tcphdr->check=checksum((char *)m_psdtcphdr,length-(m_iphdr->ihl)*4+12);
-                    //printf("DDDDD\n");
                     this->raw_tcp_send(&send_data[12],length-(m_iphdr->ihl)*4,m_iphdr,m_tcphdr);
                 }
                 else
@@ -210,6 +205,19 @@ void SecondaryRouter::start(int serverport)
                 else if(m_send_iphdr->protocol==6)
                 {
                     struct tcphdr * m_send_tcphdr=(struct tcphdr*) (send_data+(m_iphdr->ihl)*4);
+                    char new_data_buf[1024];
+                    for(int i=(m_iphdr->ihl)*4;i<length;i++) new_data_buf[i-(m_iphdr->ihl)*4+12]=buf[i];
+                    struct psdtcphdr * m_psdtcphdr=(struct psdtcphdr*) &new_data_buf[0];
+                    struct tcphdr * m_new_data_tcphdr=(struct tcphdr*) &new_data_buf[12];
+                    m_psdtcphdr->saddr=m_iphdr->saddr;
+                    m_psdtcphdr->daddr=ICMP_ID_SEQ_TO_IP[std::make_pair(m_send_tcphdr->dest,m_send_tcphdr->source)];
+                    m_psdtcphdr->protocol=m_iphdr->protocol;
+                    m_psdtcphdr->zero=0;
+                    m_psdtcphdr->tcpl=ntohs(length-(m_iphdr->ihl)*4);
+                    m_new_data_tcphdr->check=0;
+                    m_new_data_tcphdr->check=checksum(new_data_buf,m_psdtcphdr->tcpl+12);
+                    m_send_tcphdr->check=m_new_data_tcphdr->check;
+                    
                     m_send_iphdr->daddr=ICMP_ID_SEQ_TO_IP[std::make_pair(m_send_tcphdr->dest,m_send_tcphdr->source)];
                     m_send_iphdr->check=0;
                     m_send_iphdr->check=checksum((char *)m_send_iphdr,m_send_iphdr->ihl*4);
